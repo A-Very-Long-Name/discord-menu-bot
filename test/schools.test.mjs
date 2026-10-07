@@ -54,7 +54,7 @@ test('same dish in different schools has isolated buttons, totals and vote histo
  const pm=await ratedPayload({...env,PERSONAL_MODE:true},{...menu,school:'loomis'});assert.ok(pm.embeds[0].fields[0].value.startsWith('Personal ratings\n'));
  assert.ok((await refreshRatings(env,pm)).embeds[0].fields[0].value.startsWith('Personal ratings\n'));
  assert.ok((await recentVoteMessages(env,'2026-10-06'))[0].content.includes('No votes'));
- assert.ok((await recentVoteMessages({...env,SCHOOL_ID:'loomis'},'2026-10-06'))[0].content.includes('<@123>'));db.close();
+ assert.ok((await recentVoteMessages({...env,SCHOOL_ID:'loomis',VOTE_SCOPE:'user:123'},'2026-10-06'))[0].content.includes('<@123>'));db.close();
 });
 test('migration preserves existing votes and legacy rating IDs',()=>{
  const db=new DatabaseSync(':memory:');db.exec("CREATE TABLE rating_dishes(id TEXT PRIMARY KEY,name TEXT NOT NULL);INSERT INTO rating_dishes VALUES('legacy','Chicken');CREATE TABLE entree_votes(dish TEXT,serving_date TEXT,user_id TEXT,value INTEGER CHECK(value IN(-1,0,1,2)),PRIMARY KEY(dish,serving_date,user_id));INSERT INTO entree_votes VALUES('chicken','2026-10-06','123',2)");

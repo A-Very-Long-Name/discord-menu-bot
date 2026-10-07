@@ -37,6 +37,8 @@ export async function vote(env,i) {
  const result=await env.DB.prepare(`INSERT INTO entree_votes(dish,serving_date,user_id,value,school) VALUES(?,?,?,?,?)
  ON CONFLICT(school,dish,serving_date,user_id) DO UPDATE SET value=CASE WHEN entree_votes.value=excluded.value THEN 0 ELSE excluded.value END RETURNING value`)
  .bind(key,date,user.id,value,dish.school || 'sps').first();
+ const scope=i.guild_id?`guild:${i.guild_id}`:`user:${user.id}`;
+ await env.DB.prepare('INSERT INTO vote_scope_states(scope_id,school,dish,serving_date,user_id,value) VALUES(?,?,?,?,?,?) ON CONFLICT(scope_id,school,dish,serving_date,user_id) DO UPDATE SET value=excluded.value').bind(scope,dish.school||'sps',key,date,user.id,result.value).run();
  return `${result.value===0?'Rating removed.':`Rating saved: ${value===1?'👍':value===2?'🤔':'👎'}`}\n${await history({...env,SCHOOL_ID:dish.school || 'sps'},dish.name)}`;
 
 }

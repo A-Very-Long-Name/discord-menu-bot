@@ -145,6 +145,7 @@ test('breakfast and brunch return exact lowercase response without fetching menu
 test('rating buttons persist, prevent repeat votes and allow switching',async()=>{
  const {ratedPayload,vote,history,refreshRatings}=await import('../src/ratings.mjs');
  const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../schema.sql',import.meta.url),'utf8'));
+ db.exec("CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));");
  const env={DISCORD_APPLICATION_ID:'bot',DB:{prepare(sql) { return { bind(...args) { return { async run(){return db.prepare(sql).run(...args);}, async first(){return db.prepare(sql).get(...args);}, async all(){return {results:db.prepare(sql).all(...args)};} }; } }; }}};
  try {
   const menu=parseMenu(fixture('dinner'),'dinner','2026-09-09');const p=await ratedPayload(env,menu);

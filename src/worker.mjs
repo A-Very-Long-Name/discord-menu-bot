@@ -136,7 +136,8 @@ export default {
       env={...env,SCHOOL_ID:binding.school,PERSONAL_MODE:binding.scope_id?.startsWith('user:')};
     }
     if (i.type === 2 && i.data?.name === 'votes') {
-      ctx.waitUntil(answerVotes(i, env));
+      const user=i.member?.user||i.user;
+      ctx.waitUntil(answerVotes(i,{...env,VOTE_SCOPE:i.guild_id?`guild:${i.guild_id}`:`user:${user.id}`}));
       return json({type:5,data:{flags:64}});
     }
     if (i.type !== 2 || !['food','foodforall'].includes(i.data?.name)) return reply('Unknown command.');

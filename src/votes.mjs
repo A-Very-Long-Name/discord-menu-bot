@@ -6,7 +6,7 @@ export function voteDateRange(today) {
 const escape = text => String(text).replace(/([\\`*_{}\[\]<>|~])/g, '\\$1').replace(/[\r\n]/g,' ');
 export async function recentVoteMessages(env, today) {
   const {start,end} = voteDateRange(today);
-  const {results} = await env.DB.prepare('SELECT dish,serving_date,user_id,value FROM entree_votes WHERE school=? AND serving_date >= ? AND serving_date <= ? ORDER BY serving_date DESC,dish,user_id').bind(env.SCHOOL_ID || 'sps',start,end).all();
+  const {results} = await env.DB.prepare('SELECT dish,serving_date,user_id,value FROM vote_scope_states WHERE scope_id=? AND school=? AND serving_date >= ? AND serving_date <= ? ORDER BY serving_date DESC,dish,user_id').bind(env.VOTE_SCOPE||'unscoped',env.SCHOOL_ID || 'sps',start,end).all();
   const heading = `Votes · ${start.slice(5).replace('-','/')}–${end.slice(5).replace('-','/')}\nMenu dates; current vote status (not a log of every click).`;
   const chunks = [heading];
   if (!results.length) chunks[0] += '\nNo votes for these menu dates.';

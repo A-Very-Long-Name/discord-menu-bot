@@ -17,3 +17,5 @@ CREATE TABLE IF NOT EXISTS school_bindings(
 );
 
 CREATE TABLE IF NOT EXISTS menu_cache(school TEXT PRIMARY KEY,payload TEXT NOT NULL,updated_at INTEGER NOT NULL);
+
+CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));

@@ -60,7 +60,7 @@ Self-hosted existing installations must create the `menu_cache` table using `mig
 | `/setup` | `school` (required), `scope`, `lunch_notification`, `dinner_notification`, `channel`, `reminders` | Select a school and configure personal or server reminders; reply is private |
 | `/foodforall` | `meal`, `date` | Display every supported school in A–Z order, including missing-menu notices and read-only Past ratings; no voting buttons or setup required |
 | `/food` | `meal`, `date` | Display lunch or dinner with historical ratings |
-| `/votes` | None | Show saved vote states for today's and the previous two days' menu dates; visible only to the requester, available to everyone |
+| `/votes` | None | Show saved vote states for today's and the previous two days' menu dates; visible only to the requester, available to everyone; records isolated by server or personal DM |
 
 Examples:
 
@@ -89,7 +89,7 @@ Each entrée has **Like 👍**, **fine 🤔**, and **Dislike 👎** buttons with
 
 Every new menu shows school-wide historical totals across menu dates. Approval is Likes / (Likes + Fine + Dislikes). Ratings are isolated by school. Personal messages label the summary **Personal ratings**, but the totals are still shared within the school, not restricted to your own votes. Loomis has one rating row for the first Grill Main item.
 
-Other messages retain their snapshot until interacted with. `/votes` shows current saved states (including withdrawn votes), not a chronological log of every button click. Its three-day range is based on menu dates, not click timestamps.
+Other messages retain their snapshot until interacted with. `/votes` shows current saved states (including withdrawn votes), not a chronological log of every button click. Its three-day range is based on menu dates, not click timestamps. Each server and each personal DM has its own history. The underlying historical rating totals remain school-wide. Older votes without a recorded source remain in rating totals but are excluded from scoped history because their server/DM cannot be determined. Existing self-hosted installations must apply `migrate-vote-scopes.sql` once before deploying this update.
 
 ## Self-hosting
 
