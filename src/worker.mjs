@@ -101,8 +101,15 @@ export async function sendScheduled(env, now = new Date()) {
     throw new Error('Scheduled delivery failed');
   }
 }
+const scopeSchemaReady=new WeakMap();
+async function ensureScopeSchema(env){
+ if(!env.DB?.exec)return;
+ if(!scopeSchemaReady.has(env.DB)){const pending=env.DB.exec('CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));').catch(error=>{scopeSchemaReady.delete(env.DB);throw error});scopeSchemaReady.set(env.DB,pending);}
+ await scopeSchemaReady.get(env.DB);
+}
 export default {
   async fetch(request, env, ctx) {
+    await ensureScopeSchema(env);
     if (request.method === 'GET') return new Response('SPS Menu Bot is running.');
     if (request.method !== 'POST' || new URL(request.url).pathname !== '/interactions') return new Response('Not found', {status:404});
     const body = await request.text();
@@ -154,6 +161,7 @@ export default {
     return json({type:5});
   },
   async scheduled(event, env) {
+    await ensureScopeSchema(env);
     // Actual execution time avoids sending stale meal notifications after a long outage.
     const {results}=await env.DB.prepare('SELECT * FROM school_bindings WHERE enabled=1 AND channel_id IS NOT NULL').all();
     const cache=new Map();

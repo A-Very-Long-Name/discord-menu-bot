@@ -87,3 +87,10 @@ test('same user/dish/day ratings toggle independently in two servers and persona
  assert.equal((await totals({...env,VOTE_SCOPE:'user:123'},'Chicken')).fine,1);
  assert.equal(db.prepare('SELECT COUNT(*) AS n FROM entree_votes').get().n,0);db.close();
 });
+test('Worker initializes scoped ratings through its D1 binding once and preserves existing rows',async()=>{
+ const {default:worker}=await import('../src/worker.mjs');const db=new DatabaseSync(':memory:');let calls=0;
+ const env={DB:{async exec(sql){calls++;db.exec(sql);return {}}}};
+ assert.equal((await worker.fetch(new Request('https://bot.example/'),env,{})).status,200);
+ db.exec("INSERT INTO vote_scope_states VALUES('guild:a','sps','chicken','2026-10-07','123',1)");
+ await worker.fetch(new Request('https://bot.example/'),env,{});assert.equal(calls,1);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM vote_scope_states').get().n,1);db.close();
+});
