@@ -153,3 +153,4 @@ The bot may appear offline because it uses HTTP interactions instead of a Gatewa
 Stored data includes Discord user IDs, school bindings, reminder channel IDs and times, dish names, vote states, and delivery records. `/votes` privately reveals voters' identities and saved states to any user who invokes it for that school. Keep this behavior in mind when using the hosted app or running your own instance.
 
 This is an independent community project and is not affiliated with the schools, dining providers, Discord, or Cloudflare.
+Code and descriptions created by ChatGPT/Codex. All ideas are otherwise original.
