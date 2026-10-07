@@ -58,6 +58,7 @@ Self-hosted existing installations must create the `menu_cache` table using `mig
 | Command | Options | Behavior |
 | --- | --- | --- |
 | `/setup` | `school` (required), `scope`, `lunch_notification`, `dinner_notification`, `channel`, `reminders` | Select a school and configure personal or server reminders; reply is private |
+| `/foodforall` | `meal`, `date` | Display every supported school in A–Z order, including missing-menu notices and read-only Past ratings; no voting buttons or setup required |
 | `/food` | `meal`, `date` | Display lunch or dinner with historical ratings |
 | `/votes` | None | Show saved vote states for today's and the previous two days' menu dates; visible only to the requester, available to everyone |
 
@@ -66,8 +67,11 @@ Examples:
 ```text
 /food meal:lunch
 /food meal:dinner date:10/06
+/foodforall meal:dinner date:10/06
 /votes
 ```
+
+`/foodforall` queries the same date and meal for all schools and sends one card per school. Its defaults use Eastern time: today, with lunch before 14:00 and dinner afterward. Missing menus, closed meals, brunch substitutions, and retrieval errors are shown separately. Past ratings show existing school-wide totals; this command does not save votes or display voting controls.
 
 Dates use **MM/DD**, with the current year, within 31 days of today. Without a date, `/food` uses today in school time. Without a meal, it selects lunch before 14:00 and dinner afterward. In a configured server, queries use that server's school; otherwise they use your personal school. Use the bot's DM for personal queries. Menu queries are generally visible in the channel where invoked.
 

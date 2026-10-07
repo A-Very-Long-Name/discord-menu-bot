@@ -1,3 +1,4 @@
+import {allSchoolMenus} from './foodforall.mjs';
 import {loadWra,refreshWra} from './wra.mjs';
 import {lunchReminderAllowed} from './schools.mjs';
 import {school} from './schools.mjs';
@@ -20,11 +21,19 @@ export async function verify(request, body, publicKey) {
   } catch { return false; }
 }
 async function discord(path, method, body, token) {
-  const r = await fetch(API + path, {method, signal: AbortSignal.timeout(8000),
-    headers: {'Content-Type': 'application/json', ...(token ? {Authorization: `Bot ${token}`} : {})}, body: body === undefined ? undefined : JSON.stringify(body)});
-  // Do not log request URLs or raw errors: interaction URLs contain tokens.
-  if (!r.ok) throw new Error(`Discord HTTP ${r.status}`);
-  return r.status === 204 ? null : r.json();
+  for(let attempt=0;attempt<4;attempt++){
+    const r = await fetch(API + path, {method, signal: AbortSignal.timeout(8000),
+      headers: {'Content-Type': 'application/json', ...(token ? {Authorization: `Bot ${token}`} : {})}, body: body === undefined ? undefined : JSON.stringify(body)});
+    // Retry only explicit rate limits; do not retry uncertain message submissions.
+    if(r.status===429&&attempt<3){
+      const limit=await r.json();const seconds=Number(limit.retry_after);
+      if(!Number.isFinite(seconds)||seconds<0||seconds>10)throw new Error('Discord rate limit unavailable');
+      await new Promise(resolve=>setTimeout(resolve,Math.ceil(seconds*1000)+100));continue;
+    }
+    // Do not log interaction URLs: they contain tokens.
+    if (!r.ok) throw new Error(`Discord HTTP ${r.status}`);
+    return r.status === 204 ? null : r.json();
+  }
 }
 async function answer(i, meal, date, env) {
   let data,menu;
@@ -32,6 +41,15 @@ async function answer(i, meal, date, env) {
   catch { data = payload({meal, date, school:env.SCHOOL_ID || 'sps', available: false, groups: []}, true); }
   try { const message=await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`, 'PATCH', data); }
   catch { console.error('Failed to deliver menu command response'); }
+}
+export async function answerAllSchools(i,meal,date,env){
+ try{
+  const messages=await allSchoolMenus(env,meal,date);
+  for(const [index,data] of messages.entries())await discord(`/webhooks/${i.application_id}/${i.token}${index===0?'/messages/@original':''}`,index===0?'PATCH':'POST',data);
+ }catch{
+  console.error('All-school menu response failed');
+  try{await discord(`/webhooks/${i.application_id}/${i.token}`,'POST',{content:'Some school menus could not be delivered. Please try again.',allowed_mentions:{parse:[]}});}catch{}
+ }
 }
 export async function answerVotes(i, env, today = null) {
   try {
@@ -109,7 +127,7 @@ export default {
       })());
       return json({type:5,data:{flags:64}});
     }
-    if(i.type === 2 && i.data?.name === 'food' && (i.data.options||[]).some(o=>o.name==='meal' && ['breakfast','brunch'].includes(o.value))) return json({type:4,data:{content:"bro they're literally the same thing every time, currently not supported",allowed_mentions:{parse:[]}}});
+    if(i.type === 2 && ['food','foodforall'].includes(i.data?.name) && (i.data.options||[]).some(o=>o.name==='meal' && ['breakfast','brunch'].includes(o.value))) return json({type:4,data:{content:"bro they're literally the same thing every time, currently not supported",allowed_mentions:{parse:[]}}});
     if(i.type === 2 && ['food','votes'].includes(i.data?.name)) {
       const binding=await bindingFor(env,i);
       if(!binding)return reply('Welcome! Run /setup to choose your school, reminder times, and personal or server use.');
@@ -119,7 +137,7 @@ export default {
       ctx.waitUntil(answerVotes(i, env));
       return json({type:5,data:{flags:64}});
     }
-    if (i.type !== 2 || i.data?.name !== 'food') return reply('Unknown command.');
+    if (i.type !== 2 || !['food','foodforall'].includes(i.data?.name)) return reply('Unknown command.');
     const options = Object.fromEntries((i.data.options || []).map(x => [x.name,x.value]));
     const local = localTime(new Date(),school(env.SCHOOL_ID).zone);
     const meal = options.meal || (local.minutes < 840 ? 'lunch' : 'dinner');
@@ -127,7 +145,7 @@ export default {
     const date = queryDate(options.date, local.date);
     if (!MEALS.includes(meal) || !date) return reply('Use breakfast, brunch, lunch or dinner; date must be MM/DD (current year).');
     if (Math.abs(Date.parse(date) - Date.parse(local.date)) > 31*86400000) return reply('Please select a date within 31 days of today.');
-    ctx.waitUntil(answer(i, meal, date, env));
+    ctx.waitUntil(i.data.name==='foodforall'?answerAllSchools(i,meal,date,env):answer(i, meal, date, env));
     return json({type:5});
   },
   async scheduled(event, env) {
