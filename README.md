@@ -14,16 +14,16 @@ Personal DM reminders also require Discord to allow the bot to send you direct m
 
 | School | Menu selection | Local timezone |
 | --- | --- | --- |
-| Western Reserve Academy | First three public weekly menu slides; BRAVO, Pioneer Plates and Inspired Eats; exclude V2 and everyday staples | America/New_York |
-| St. Paul's School | Coit Entrée, Sides, Dessert; weekday lunch also includes Grab ’n Go Deli Bar sandwiches | America/New_York |
-| The Loomis Chaffee School | Grill Main: first item as Entrée, remaining items as Sides | America/New_York |
-| Phillips Academy Andover | Paresky Dining, 2nd Floor Home Zone | America/New_York |
+| Cate School | Hot Lunch/Dinner Offerings | America/Los_Angeles |
+| Deerfield Academy | Main entrée, sides, and dessert | America/New_York |
 | Groton School | Main entrée, sides, and dessert from the main meal | America/New_York |
 | The Lawrenceville School | Published daily lunch/dinner main items and sides | America/New_York |
-| Deerfield Academy | Main entrée, sides, and dessert | America/New_York |
-| Cate School | Hot Lunch/Dinner Offerings | America/Los_Angeles |
-| The Taft School | Horace Dutton Taft, Home Zone | America/New_York |
+| The Loomis Chaffee School | Grill Main: first item as Entrée, remaining items as Sides | America/New_York |
 | Peddie School | Published lunch/dinner menu events | America/New_York |
+| Phillips Academy Andover | Paresky Dining, 2nd Floor Home Zone | America/New_York |
+| St. Paul's School | Coit Entrée, Sides, Dessert; weekday lunch also includes Grab ’n Go Deli Bar sandwiches | America/New_York |
+| The Taft School | Horace Dutton Taft, Home Zone | America/New_York |
+| Western Reserve Academy | First three public weekly menu slides; BRAVO, Pioneer Plates and Inspired Eats; exclude V2 and everyday staples | America/New_York |
 
 Selections focus on the main meal, excluding unrelated stations and special accommodation sections. Where sources lack explicit categories, conservative rules infer mains and sides. Availability depends on the dates published by each school. See [School sources and parsing rules](SCHOOL_SOURCES.md) for source links and limitations. Sources were checked on October 6, 2026.
 

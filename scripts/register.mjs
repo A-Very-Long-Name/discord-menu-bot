@@ -12,7 +12,7 @@ const commands=[
   {type:3,name:'date',description:'MM/DD (current year; default: today in school time)'}]},
  {name:'votes',description:"View votes for today's and previous two days' menus"},
  {name:'setup',description:'Choose your school and reminder settings',options:[
-  {type:3,name:'school',description:'Your school',required:true,choices:Object.entries(SCHOOLS).map(([value,s])=>({name:s.name,value}))},
+  {type:3,name:'school',description:'Your school',required:true,choices:Object.entries(SCHOOLS).sort(([,a],[,b])=>a.name.replace(/^The /,'').localeCompare(b.name.replace(/^The /,''),'en')).map(([value,s])=>({name:s.name,value}))},
   {type:3,name:'scope',description:'Personal settings or server settings (server requires Manage Server)',choices:[{name:'Personal',value:'personal'},{name:'Server',value:'server'}]},
   {type:3,name:'lunch_notification',description:'Lunch notification time HH:mm, 24-hour school local time (default 07:00)'},
   {type:3,name:'dinner_notification',description:'Dinner notification time HH:mm, 24-hour school local time (default 15:00)'},
