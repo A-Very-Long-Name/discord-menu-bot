@@ -110,6 +110,8 @@ export default {
     let i; try { i = JSON.parse(body); } catch { return new Response('Bad JSON', {status:400}); }
     if (i.type === 1) return json({type:1});
     if (i.application_id !== env.DISCORD_APPLICATION_ID) return reply('This bot is configured for another server.');
+    const actor=i.member?.user||i.user;
+    env={...env,VOTE_SCOPE:i.guild_id?`guild:${i.guild_id}`:actor?.id?`user:${actor.id}`:'unscoped'};
     if(i.type===3) {
       ctx.waitUntil((async()=>{
         try {
@@ -162,7 +164,7 @@ export default {
     const now=new Date();
     try{await refreshWra(env,now,localTime(now));}catch{console.error('WRA weekly refresh unavailable');}
     for(const binding of results)for(const meal of ['lunch','dinner']) {
-      try{await sendScheduled({...env,SCHOOL_ID:binding.school,DISCORD_CHANNEL_ID:binding.channel_id,BINDING:binding,PERSONAL_MODE:binding.scope_id.startsWith('user:'),MEAL_FORCE:meal,MENU_FETCHER:menuFetcher},now)}catch{console.error('Reminder delivery failed')}
+      try{await sendScheduled({...env,SCHOOL_ID:binding.school,VOTE_SCOPE:binding.scope_id,DISCORD_CHANNEL_ID:binding.channel_id,BINDING:binding,PERSONAL_MODE:binding.scope_id.startsWith('user:'),MEAL_FORCE:meal,MENU_FETCHER:menuFetcher},now)}catch{console.error('Reminder delivery failed')}
     }
   }
 };

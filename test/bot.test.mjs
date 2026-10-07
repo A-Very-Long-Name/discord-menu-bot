@@ -146,11 +146,11 @@ test('rating buttons persist, prevent repeat votes and allow switching',async()=
  const {ratedPayload,vote,history,refreshRatings}=await import('../src/ratings.mjs');
  const db=new DatabaseSync(':memory:');db.exec(readFileSync(new URL('../schema.sql',import.meta.url),'utf8'));
  db.exec("CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));");
- const env={DISCORD_APPLICATION_ID:'bot',DB:{prepare(sql) { return { bind(...args) { return { async run(){return db.prepare(sql).run(...args);}, async first(){return db.prepare(sql).get(...args);}, async all(){return {results:db.prepare(sql).all(...args)};} }; } }; }}};
+ const env={VOTE_SCOPE:'guild:test',DISCORD_APPLICATION_ID:'bot',DB:{prepare(sql) { return { bind(...args) { return { async run(){return db.prepare(sql).run(...args);}, async first(){return db.prepare(sql).get(...args);}, async all(){return {results:db.prepare(sql).all(...args)};} }; } }; }}};
  try {
   const menu=parseMenu(fixture('dinner'),'dinner','2026-09-09');const p=await ratedPayload(env,menu);
   assert.equal(p.components[0].components.length,3);assert.equal(p.embeds[0].fields[0].value,'No ratings yet');
-  const i={member:{user:{id:'user'}},message:{author:{id:'bot'},components:p.components},data:{custom_id:p.components[0].components[0].custom_id}};
+  const i={guild_id:'test',member:{user:{id:'user'}},message:{author:{id:'bot'},components:p.components},data:{custom_id:p.components[0].components[0].custom_id}};
   await vote(env,i);await vote(env,i);assert.equal(await history(env,menu.groups[0].items[0]),'No ratings yet');await vote(env,i);assert.equal(await history(env,menu.groups[0].items[0]),'👍 1 · 🤔 0 · 👎 0 · 100% approval');
   i.data.custom_id=p.components[0].components[2].custom_id;await vote(env,i);
   assert.equal(await history(env,menu.groups[0].items[0]),'👍 0 · 🤔 0 · 👎 1 · 0% approval');

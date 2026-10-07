@@ -2,7 +2,7 @@ import {payload} from './menu.mjs';
 export const dishKey=name=>name.normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase();
 export function entrees(menu) {return [...new Set(menu.groups.filter(g=>/^(main )?entree$/.test(g.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())).flatMap(g=>g.items))];}
 export async function totals(env,name) {
- const {results}=await env.DB.prepare('SELECT value,COUNT(*) AS n FROM entree_votes WHERE dish=? AND school=? GROUP BY value').bind(dishKey(name),env.SCHOOL_ID || 'sps').all();
+ const {results}=await env.DB.prepare('SELECT value,COUNT(*) AS n FROM vote_scope_states WHERE dish=? AND school=? AND scope_id=? GROUP BY value').bind(dishKey(name),env.SCHOOL_ID || 'sps',env.VOTE_SCOPE||'unscoped').all();
  const up=Number(results.find(r=>r.value===1)?.n||0),down=Number(results.find(r=>r.value===-1)?.n||0);
  const fine=Number(results.find(r=>r.value===2)?.n||0);
  return {up,down,fine};
@@ -34,12 +34,11 @@ export async function vote(env,i) {
  if(i.message?.author?.id!==env.DISCORD_APPLICATION_ID || !i.message?.components?.some(row=>row.components?.some(c=>c.custom_id===i.data.custom_id)))return 'This rating is unavailable.';
  const key=dishKey(dish.name), value=Number(v);
  // A single atomic upsert toggles matching votes to zero; zero means withdrawn.
- const result=await env.DB.prepare(`INSERT INTO entree_votes(dish,serving_date,user_id,value,school) VALUES(?,?,?,?,?)
- ON CONFLICT(school,dish,serving_date,user_id) DO UPDATE SET value=CASE WHEN entree_votes.value=excluded.value THEN 0 ELSE excluded.value END RETURNING value`)
- .bind(key,date,user.id,value,dish.school || 'sps').first();
  const scope=i.guild_id?`guild:${i.guild_id}`:`user:${user.id}`;
- await env.DB.prepare('INSERT INTO vote_scope_states(scope_id,school,dish,serving_date,user_id,value) VALUES(?,?,?,?,?,?) ON CONFLICT(scope_id,school,dish,serving_date,user_id) DO UPDATE SET value=excluded.value').bind(scope,dish.school||'sps',key,date,user.id,result.value).run();
- return `${result.value===0?'Rating removed.':`Rating saved: ${value===1?'👍':value===2?'🤔':'👎'}`}\n${await history({...env,SCHOOL_ID:dish.school || 'sps'},dish.name)}`;
+ const result=await env.DB.prepare(`INSERT INTO vote_scope_states(scope_id,school,dish,serving_date,user_id,value) VALUES(?,?,?,?,?,?)
+ ON CONFLICT(scope_id,school,dish,serving_date,user_id) DO UPDATE SET value=CASE WHEN vote_scope_states.value=excluded.value THEN 0 ELSE excluded.value END RETURNING value`)
+ .bind(scope,dish.school||'sps',key,date,user.id,value).first();
+ return `${result.value===0?'Rating removed.':`Rating saved: ${value===1?'👍':value===2?'🤔':'👎'}`}\n${await history({...env,VOTE_SCOPE:scope,SCHOOL_ID:dish.school || 'sps'},dish.name)}`;
 
 }
 

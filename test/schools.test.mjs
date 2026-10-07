@@ -16,7 +16,7 @@ function database(){
   async all(){return {results:db.prepare(sql).all(...args)}},
   async run(){return db.prepare(sql).run(...args)}
  });
- return {db,env:{DISCORD_APPLICATION_ID:'bot',DB:{prepare(sql){return {...prepared(sql),bind(...args){return prepared(sql,args)}}}}}};
+ return {db,env:{VOTE_SCOPE:'user:123',DISCORD_APPLICATION_ID:'bot',DB:{prepare(sql){return {...prepared(sql),bind(...args){return prepared(sql,args)}}}}}};
 }
 test('Loomis station order uses menu_info and only Grill Main, without SPS deli',async()=>{
  const urls=[];const menu=await loadMenu('lunch','2026-10-06',async url=>{urls.push(url);return Response.json(fixture)},'loomis');
@@ -72,4 +72,18 @@ test('custom reminder times support simultaneous lunch/dinner and deduplicate se
  await sendScheduled({...custom,MEAL_FORCE:'lunch'},new Date('2026-10-06T12:16:00Z'));
  assert.equal(sent.length,2);assert.ok(sent.every(p=>p.embeds[0].title.includes('Loomis')));
  }finally{globalThis.fetch=original;db.close()}
+});
+test('same user/dish/day ratings toggle independently in two servers and personal DM; totals never mix',async()=>{
+ const {db,env}=database();
+ const menu={school:'sps',meal:'dinner',date:'2026-10-07',available:true,groups:[{name:'Entrée',items:['Chicken']}]};
+ const card=await ratedPayload({...env,VOTE_SCOPE:'guild:a'},menu);
+ const interaction=(guild,value)=>({...(guild?{guild_id:guild}:{}),user:{id:'123'},message:{author:{id:'bot'},components:card.components},data:{custom_id:card.components[0].components.find(c=>c.custom_id.endsWith(':'+value)).custom_id}});
+ await vote(env,interaction('a',1));await vote(env,interaction('b',-1));await vote(env,interaction(null,2));
+ assert.deepEqual(await totals({...env,VOTE_SCOPE:'guild:a'},'Chicken'),{up:1,down:0,fine:0});
+ assert.deepEqual(await totals({...env,VOTE_SCOPE:'guild:b'},'Chicken'),{up:0,down:1,fine:0});
+ assert.deepEqual(await totals({...env,VOTE_SCOPE:'user:123'},'Chicken'),{up:0,down:0,fine:1});
+ await vote(env,interaction('a',1));assert.deepEqual(await totals({...env,VOTE_SCOPE:'guild:a'},'Chicken'),{up:0,down:0,fine:0});
+ assert.equal((await totals({...env,VOTE_SCOPE:'guild:b'},'Chicken')).down,1);
+ assert.equal((await totals({...env,VOTE_SCOPE:'user:123'},'Chicken')).fine,1);
+ assert.equal(db.prepare('SELECT COUNT(*) AS n FROM entree_votes').get().n,0);db.close();
 });
