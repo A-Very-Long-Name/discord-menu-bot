@@ -14,6 +14,7 @@ Personal DM reminders also require Discord to allow the bot to send you direct m
 
 | School | Menu selection | Local timezone |
 | --- | --- | --- |
+| Western Reserve Academy | First three public weekly menu slides; BRAVO, Pioneer Plates and Inspired Eats; exclude V2 and everyday staples | America/New_York |
 | St. Paul's School | Coit Entrée, Sides, Dessert; weekday lunch also includes Grab ’n Go Deli Bar sandwiches | America/New_York |
 | The Loomis Chaffee School | Grill Main: first item as Entrée, remaining items as Sides | America/New_York |
 | Phillips Academy Andover | Paresky Dining, 2nd Floor Home Zone | America/New_York |
@@ -42,7 +43,15 @@ For a server (requires Manage Server permission):
 
 Use the Discord option picker to enter these values. The bot needs View Channel, Send Messages, and Embed Links permissions in the selected text channel.
 
-Lunch reminders run Monday–Saturday; no Sunday lunch or brunch notification is sent. Dinner reminders run daily. Times use the school's local timezone and adjust for daylight saving time. Defaults are 07:00 for lunch and 15:00 for dinner. Set `reminders:false` with `/setup` to disable notifications.
+Lunch reminders run Monday–Friday for Western Reserve Academy and Loomis, and Monday–Saturday for the other schools by default. No Sunday lunch or brunch notification is sent. A Saturday with a published brunch replacing an absent lunch is also skipped when the source exposes that meal information. Dinner reminders run daily. Times use the school's local timezone and adjust for daylight saving time. Defaults are 07:00 for lunch and 15:00 for dinner. Set `reminders:false` with `/setup` to disable notifications.
+
+## Western Reserve weekly menu
+
+The app exports only the first three slides of the public menu deck: Breakfast, Lunch & Brunch, and Dinner. It caches their table data in D1. Every Monday, starting at **06:00 America/New_York**, it retries fetching the current weekly menu before 07:00. If the school has not published the new week or Google is unavailable, it cannot guarantee completion before 07:00. It rejects a mismatched week instead of using the previous week's menu. Queries can fetch the deck on demand if no matching cached week exists.
+
+The current deck labels Saturday and Sunday lunch as brunch, so WRA receives weekday lunch reminders only, with dinner reminders daily. Menus still use the existing Entrée/Sides/Dessert display and rating buttons. Classification is based on dish names inside BRAVO, Pioneer Plates, and Inspired Eats; vegetarian V2 and everyday staples are excluded. Breakfast and brunch query behavior is unchanged.
+
+Self-hosted existing installations must create the `menu_cache` table using `migrate-menu-cache.sql` before deploying this update. Fresh installations use `schema.sql`.
 
 ## Commands
 

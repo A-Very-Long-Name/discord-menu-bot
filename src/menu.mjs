@@ -108,7 +108,16 @@ async function loadDeli(date, fetcher) {
 export async function loadMenu(meal, date, fetcher = fetch, schoolId = 'sps') {
   menuUrl(meal,date,schoolId);
   if(school(schoolId).provider)return loadExternal(schoolId,meal,date,fetcher);
-  if (schoolId !== 'sps' || !includeDeli(meal, date)) return loadCoit(meal, date, fetcher, schoolId);
+  if (schoolId !== 'sps' || !includeDeli(meal, date)) {
+    const menu=await loadCoit(meal,date,fetcher,schoolId);
+    if(meal==='lunch'&&!menu.available&&new Date(date+'T12:00:00Z').getUTCDay()===6){
+      try{const response=await fetcher(apiUrl('brunch',date,schoolId),{signal:AbortSignal.timeout(8000)});
+        if(response.ok){const data=await response.json();const day=data.days?.find(d=>d.date===date);
+          if(day?.menu_items?.some(i=>i.food?.name)&&!day.menu_items.some(i=>/in lieu of brunch/i.test(i.text||'')))return {...menu,brunch:true};}
+      }catch{}
+    }
+    return menu;
+  }
   const [coit, deli] = await Promise.allSettled([loadCoit(meal, date, fetcher), loadDeli(date, fetcher)]);
   const menu = coit.status === 'fulfilled' ? coit.value : {meal, date, available:false, groups:[], failed:true};
   return {...menu, deli: deli.status === 'fulfilled' ? deli.value : {items:[], failed:true}};
@@ -117,6 +126,7 @@ export function payload(menu, failure = false) {
   let lines = menu.groups.filter(g => wantedSection(g.name)).map(g => `**${escape(g.name)}**\n${g.items.map(x => `• ${escape(x)}`).join('\n')}`);
   if (menu.available && !lines.length) lines = ['No Entrée, Sides or Dessert items are listed for this meal/date.'];
   if (!menu.available) lines = [(failure || menu.failed) ? 'Menu could not be retrieved. Please check the original menu.' : 'No menu items are published for this meal/date. This does not necessarily mean the dining hall is closed.'];
+  if(menu.brunch)lines=['Brunch is served instead of lunch on this date. Brunch menus are currently not supported.'];
   if(menu.closed)lines=['The dining hall is closed for this meal/date.'];
   if (menu.partial) lines.push('Some menu items may not yet be published.');
   let description = lines.join('\n\n');

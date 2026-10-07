@@ -47,5 +47,5 @@ export async function configure(env,i,discord){
  }
  await env.DB.prepare(`INSERT INTO school_bindings(scope_id,school,channel_id,lunch_min,dinner_min,enabled) VALUES(?,?,?,?,?,?) ON CONFLICT(scope_id) DO UPDATE SET school=excluded.school,channel_id=excluded.channel_id,lunch_min=excluded.lunch_min,dinner_min=excluded.dinner_min,enabled=excluded.enabled`).bind(target,opts.school,channel||null,lunch,dinner,enabled&&channel?1:0).run();
  const time=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
- return `${SCHOOLS[opts.school].name} saved for ${scope==='server'?'this server':'you'}.\nLunch notification: ${time(lunch)} (Mon–Sat). Dinner notification: ${time(dinner)} (daily).\nTimezone: ${school(opts.school).zone}. Reminders: ${enabled&&channel?'on':'off'}.${warning}`;
+ return `${SCHOOLS[opts.school].name} saved for ${scope==='server'?'this server':'you'}.\nLunch notification: ${time(lunch)} (${school(opts.school).brunchDays?.includes('Sat')?'Mon–Fri':'Mon–Sat'}). Dinner notification: ${time(dinner)} (daily).\nTimezone: ${school(opts.school).zone}. Reminders: ${enabled&&channel?'on':'off'}.${warning}`;
 }

@@ -43,3 +43,21 @@ All nine schools' lunch and dinner sources were fetched using the final implemen
 - https://taft.mydininghub.com/en/location/horace-dutton-taft
 - https://loomischaffee.flikisdining.com/
 - https://peddie.org/events/category/pfs-menus/list
+
+
+## Western Reserve Academy and weekend reminder review — October 6, 2026
+
+The public deck https://docs.google.com/presentation/d/1xHWF4RymuEc51msed9bs7XyhH-6N4OHg4dAH8cOofuA/edit exports as PPTX without school credentials. Only slide1–3 XML is retained: Breakfast, Lunch & Brunch, Dinner. The Week of 10/5 tables label Saturday and Sunday as Brunch. WRA selects BRAVO, Pioneer Plates and Inspired Eats, excludes V2 and everyday staples, classifies dish names, and caches dated week data. Weekly prefetch starts Monday 06:00 Eastern and retries before 07:00; source publication and outages can prevent completion. Queries fetch on demand if the cache lacks the requested week. Out-of-week results are not substituted.
+
+Weekend evidence:
+- Loomis: official Open Hours page explicitly says Saturday/Sunday brunch. Both weekend lunch reminders disabled. https://www.loomischaffee.org/news/daily-bulletin/open-hours
+- WRA: current deck explicitly labels both weekend days brunch; weekday lunch reminders only.
+- Deerfield: official bulletin lists Saturday Lunch and Sunday Brunch. Saturday retained. https://deerfield.edu/students/
+- Taft: official Taft Eats page says breakfast/lunch Monday–Saturday, brunch Sunday. https://www.taftschool.org/campus-life/daily-life/taft-eats
+- Lawrenceville: official dining page lists Saturday lunch and Sunday brunch. https://sites.google.com/lawrenceville.org/dining-menu/home
+- Groton: October10 brunch JSON explicitly says “Breakfast and lunch offered in lieu of brunch.” Saturday lunch retained; merely having a brunch response is not evidence of brunch service.
+- Peddie: October10 events explicitly include Breakfast, Lunch and Dinner. Saturday lunch retained; a Brunch event replacing an absent Lunch suppresses notifications on that date. A permanent weekend pattern remains unverified.
+- SPS: preserve owner-selected Sunday skip and Saturday lunch.
+- Cate and Andover: permanent weekend brunch patterns not confirmed from a current official regular-term timetable. Preserve Saturday lunch and existing Sunday skip; when an absent Saturday lunch has actual brunch menu items, suppress that day's lunch notification. Do not infer brunch from an empty or failed endpoint.
+
+All ten schools remain available in setup. Skipping brunch is a notification rule; breakfast/brunch slash-command replies remain unchanged.

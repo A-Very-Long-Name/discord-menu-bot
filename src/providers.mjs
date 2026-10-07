@@ -116,7 +116,7 @@ function htmlLines(html){
 export function parsePeddie(data,meal,date){
  if(!Array.isArray(data.events))throw new Error('Peddie schema changed');
  const events=data.events.filter(e=>String(e.start_date).slice(0,10)===date&&new RegExp('^'+meal+'(?:\\b|-)','i').test(e.title));
- if(!events.length)return result('peddie',meal,date,[]);
+ if(!events.length)return result('peddie',meal,date,[],{brunch:meal==='lunch'&&data.events.some(e=>String(e.start_date).slice(0,10)===date&&/^brunch\b/i.test(e.title)&&!/(closed|cancelled|canceled)/i.test(e.title))});
  const open=events.filter(e=>!/(closed|cancelled|canceled)/i.test(e.title));
  if(!open.length)return result('peddie',meal,date,[],{closed:true});
  const selected=[];
@@ -153,7 +153,15 @@ export async function loadExternal(id,meal,date,fetcher){
   options.headers={...options.headers,Store:config.store,'magento-store-code':config.store.replace(/_en$/,''),'magento-website-code':config.store.replace(/_en$/,''),'magento-store-view-code':config.store,'X-Api-Key':'ElevateAPIProd'};
  }else if(id==='peddie')url='https://peddie.org/wp-json/tribe/events/v1/events/?'+new URLSearchParams({categories:'pfs-menus',start_date:date+' 00:00:00',end_date:date+' 23:59:59',per_page:'50'});
  const r=await fetcher(url,options);if(!r.ok)throw new Error('School menu HTTP '+r.status);
- if(config.provider==='elevate')return parseElevate(await r.json(),id,meal,date);
+ if(config.provider==='elevate'){
+  const menu=parseElevate(await r.json(),id,meal,date);
+  if(meal==='lunch'&&!menu.available&&new Date(date+'T12:00:00Z').getUTCDay()===6){
+   const vars={campusUrlKey:'campus',locationUrlKey:config.slug,date,mealPeriod:13,viewType:'DAILY'};
+   const brunch=await fetcher(GRAPHQL+'?'+new URLSearchParams({query:QUERY,variables:JSON.stringify(vars)}),options);
+   if(brunch.ok&&parseElevate(await brunch.json(),id,meal,date).available)return {...menu,brunch:true};
+  }
+  return menu;
+ }
  if(id==='peddie'){const data=await r.json();if(data.total_pages>1)throw new Error('Peddie date query needs pagination');return parsePeddie(data,meal,date);}
  const html=await r.text();return id==='deerfield'?parseDeerfield(html,meal,date):parseLawrenceville(html,meal,date);
 }

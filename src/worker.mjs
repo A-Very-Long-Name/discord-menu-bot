@@ -1,3 +1,5 @@
+import {loadWra,refreshWra} from './wra.mjs';
+import {lunchReminderAllowed} from './schools.mjs';
 import {school} from './schools.mjs';
 import {bindingFor,configure} from './setup.mjs';
 import {ratedPayload, vote, refreshRatings} from './ratings.mjs';
@@ -26,7 +28,7 @@ async function discord(path, method, body, token) {
 }
 async function answer(i, meal, date, env) {
   let data,menu;
-  try { menu=await loadMenu(meal,date,fetch,env.SCHOOL_ID || 'sps'); data = await ratedPayload(env,menu); }
+  try { menu=env.SCHOOL_ID==='wra'?await loadWra(env,meal,date):await loadMenu(meal,date,fetch,env.SCHOOL_ID || 'sps'); data = await ratedPayload(env,menu); }
   catch { data = payload({meal, date, school:env.SCHOOL_ID || 'sps', available: false, groups: []}, true); }
   try { const message=await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`, 'PATCH', data); }
   catch { console.error('Failed to deliver menu command response'); }
@@ -47,7 +49,7 @@ export async function answerVotes(i, env, today = null) {
 export async function sendScheduled(env, now = new Date()) {
   const local=localTime(now,school(env.SCHOOL_ID).zone);
   const config=env.BINDING;
-  const due=config ? (env.MEAL_FORCE !== 'dinner' && local.weekday !== 'Sun' && local.minutes >= config.lunch_min && local.minutes < config.lunch_min+30 ? {...local,meal:'lunch',age:local.minutes-config.lunch_min} : env.MEAL_FORCE !== 'lunch' && local.minutes >= config.dinner_min && local.minutes < config.dinner_min+30 ? {...local,meal:'dinner',age:local.minutes-config.dinner_min} : null) : scheduledMeal(now);
+  const due=config ? (env.MEAL_FORCE !== 'dinner' && lunchReminderAllowed(env.SCHOOL_ID||'sps',local.weekday) && local.minutes >= config.lunch_min && local.minutes < config.lunch_min+30 ? {...local,meal:'lunch',age:local.minutes-config.lunch_min} : env.MEAL_FORCE !== 'lunch' && local.minutes >= config.dinner_min && local.minutes < config.dinner_min+30 ? {...local,meal:'dinner',age:local.minutes-config.dinner_min} : null) : scheduledMeal(now);
   if (!due) return;
   const key = `${env.DISCORD_CHANNEL_ID}:${due.date}:${due.meal}${env.SCHOOL_ID && env.SCHOOL_ID !== 'sps' ? ':'+env.SCHOOL_ID : ''}`;
   const stamp = Date.now();
@@ -58,8 +60,9 @@ export async function sendScheduled(env, now = new Date()) {
   if (!claim) return;
   try {
     let menu, failure = false;
-    try { menu = await loadMenu(due.meal, due.date,env.MENU_FETCHER || fetch,env.SCHOOL_ID || 'sps'); }
+    try { menu = env.SCHOOL_ID==='wra' ? await loadWra(env,due.meal,due.date,env.MENU_FETCHER||fetch) : await loadMenu(due.meal, due.date,env.MENU_FETCHER || fetch,env.SCHOOL_ID || 'sps'); }
     catch { failure = true; menu = {meal: due.meal, date: due.date, school:env.SCHOOL_ID || 'sps', available: false, groups: []}; }
+    if(due.meal==='lunch'&&menu.brunch){await env.DB.prepare("UPDATE deliveries SET status='sent' WHERE delivery_key=?").bind(key).run();return;}
     // Retry empty/unavailable menus for 25 minutes before posting one explanatory notice.
     if (!menu.available && !menu.closed && due.age < 25) {
       await env.DB.prepare('UPDATE deliveries SET lease_until=0 WHERE delivery_key=?').bind(key).run();
@@ -136,6 +139,7 @@ export default {
       return (await cache.get(url)).clone();
     };
     const now=new Date();
+    try{await refreshWra(env,now,localTime(now));}catch{console.error('WRA weekly refresh unavailable');}
     for(const binding of results)for(const meal of ['lunch','dinner']) {
       try{await sendScheduled({...env,SCHOOL_ID:binding.school,DISCORD_CHANNEL_ID:binding.channel_id,BINDING:binding,PERSONAL_MODE:binding.scope_id.startsWith('user:'),MEAL_FORCE:meal,MENU_FETCHER:menuFetcher},now)}catch{console.error('Reminder delivery failed')}
     }
