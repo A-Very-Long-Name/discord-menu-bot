@@ -1,0 +1,277 @@
+{
+  "days": [
+    {
+      "date": "2026-10-06",
+      "menu_info": {
+        "300937": {
+          "position": 0,
+          "section_options": {
+            "display_name": null,
+            "use_section_title": false,
+            "section_title_can_expand_collapse": true
+          }
+        },
+        "300939": {
+          "position": 1,
+          "section_options": {
+            "display_name": null,
+            "use_section_title": false,
+            "section_title_can_expand_collapse": true
+          }
+        },
+        "300947": {
+          "position": 2,
+          "section_options": {
+            "display_name": null,
+            "use_section_title": false,
+            "section_title_can_expand_collapse": true
+          }
+        },
+        "300940": {
+          "position": 3,
+          "section_options": {
+            "display_name": null,
+            "use_section_title": false,
+            "section_title_can_expand_collapse": true
+          }
+        },
+        "300941": {
+          "position": 4,
+          "section_options": {
+            "display_name": null,
+            "use_section_title": false,
+            "section_title_can_expand_collapse": true
+          }
+        },
+        "300944": {
+          "position": 5,
+          "section_options": {
+            "display_name": null,
+            "use_section_title": false,
+            "section_title_can_expand_collapse": true
+          }
+        }
+      },
+      "menu_items": [
+        {
+          "menu_id": 300937,
+          "position": 0,
+          "text": "Soup",
+          "is_section_title": true,
+          "is_station_header": true,
+          "food": null
+        },
+        {
+          "menu_id": 300937,
+          "position": 1,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Vegetarian Minestrone"
+          }
+        },
+        {
+          "menu_id": 300937,
+          "position": 2,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Beef Vegetable Soup"
+          }
+        },
+        {
+          "menu_id": 300939,
+          "position": 0,
+          "text": "Grill Main",
+          "is_section_title": true,
+          "is_station_header": true,
+          "food": null
+        },
+        {
+          "menu_id": 300939,
+          "position": 1,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Tandoori Chicken Thigh"
+          }
+        },
+        {
+          "menu_id": 300939,
+          "position": 2,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Paneer Makhani"
+          }
+        },
+        {
+          "menu_id": 300939,
+          "position": 3,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Basmati Rice"
+          }
+        },
+        {
+          "menu_id": 300939,
+          "position": 4,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Steamed Broccoli"
+          }
+        },
+        {
+          "menu_id": 300947,
+          "position": 0,
+          "text": "Vegan",
+          "is_section_title": true,
+          "is_station_header": true,
+          "food": null
+        },
+        {
+          "menu_id": 300947,
+          "position": 1,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Tandoori Cauliflower Dosa"
+          }
+        },
+        {
+          "menu_id": 300940,
+          "position": 0,
+          "text": "Gluten Aware",
+          "is_section_title": true,
+          "is_station_header": true,
+          "food": null
+        },
+        {
+          "menu_id": 300940,
+          "position": 1,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Tandoori Chicken Thigh"
+          }
+        },
+        {
+          "menu_id": 300940,
+          "position": 2,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Paneer Makhani"
+          }
+        },
+        {
+          "menu_id": 300940,
+          "position": 3,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Basmati Rice"
+          }
+        },
+        {
+          "menu_id": 300940,
+          "position": 4,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Steamed Broccoli"
+          }
+        },
+        {
+          "menu_id": 300941,
+          "position": 0,
+          "text": "Pasta",
+          "is_section_title": true,
+          "is_station_header": true,
+          "food": null
+        },
+        {
+          "menu_id": 300941,
+          "position": 1,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Gemelli Pasta"
+          }
+        },
+        {
+          "menu_id": 300941,
+          "position": 2,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Marinara Sauce"
+          }
+        },
+        {
+          "menu_id": 300941,
+          "position": 3,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Grilled Vegetables"
+          }
+        },
+        {
+          "menu_id": 300944,
+          "position": 0,
+          "text": "Pizza",
+          "is_section_title": true,
+          "is_station_header": true,
+          "food": null
+        },
+        {
+          "menu_id": 300944,
+          "position": 1,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "California Bacon Club Pizza"
+          }
+        },
+        {
+          "menu_id": 300944,
+          "position": 2,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Cheese Pizza"
+          }
+        },
+        {
+          "menu_id": 300944,
+          "position": 3,
+          "text": "",
+          "is_section_title": false,
+          "is_station_header": false,
+          "food": {
+            "name": "Pepperoni Pizza"
+          }
+        }
+      ]
+    }
+  ]
+}

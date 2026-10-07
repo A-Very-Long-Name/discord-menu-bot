@@ -1,0 +1,193 @@
+{
+  "days": [
+    {
+      "date": "2026-10-04",
+      "menu_items": [
+        {
+          "position": 0,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "Entree",
+          "food": null
+        },
+        {
+          "position": 1,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Chicken Marsala"
+          }
+        },
+        {
+          "position": 2,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "Vegetarian Entree",
+          "food": null
+        },
+        {
+          "position": 3,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Eggplant Rollatini"
+          }
+        },
+        {
+          "position": 4,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "Sides",
+          "food": null
+        },
+        {
+          "position": 5,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Traditional Rice Pilaf"
+          }
+        },
+        {
+          "position": 6,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Roasted Mushrooms"
+          }
+        },
+        {
+          "position": 7,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "Power Bar",
+          "food": null
+        },
+        {
+          "position": 8,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Grilled Chicken Breast"
+          }
+        },
+        {
+          "position": 9,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Roasted Sweet Potato Wedges"
+          }
+        },
+        {
+          "position": 10,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Vegetable DuJour"
+          }
+        },
+        {
+          "position": 11,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Daily Tofu"
+          }
+        },
+        {
+          "position": 12,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "Pasta",
+          "food": null
+        },
+        {
+          "position": 13,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "House-made Marinara Sauce"
+          }
+        },
+        {
+          "position": 14,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Creamy Parmesan Alfredo Sauce"
+          }
+        },
+        {
+          "position": 15,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "International",
+          "food": null
+        },
+        {
+          "position": 16,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Jasmine Rice"
+          }
+        },
+        {
+          "position": 17,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Seasoned Rice Vinegar"
+          }
+        },
+        {
+          "position": 18,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Soy Sauce"
+          }
+        },
+        {
+          "position": 19,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Less Sodium Soy Sauce"
+          }
+        },
+        {
+          "position": 20,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Furikake"
+          }
+        },
+        {
+          "position": 21,
+          "is_section_title": true,
+          "is_station_header": true,
+          "text": "Dessert",
+          "food": null
+        }
+      ]
+    }
+  ]
+}

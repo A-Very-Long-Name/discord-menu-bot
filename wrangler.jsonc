@@ -1,0 +1,24 @@
+{
+  "name": "sps-menu-bot",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-09-09",
+  "triggers": {
+    "crons": [
+      "* * * * *"
+    ]
+  },
+  "vars": {
+    "DISCORD_APPLICATION_ID": "YOUR_APPLICATION_ID",
+    "DISCORD_PUBLIC_KEY": "YOUR_PUBLIC_KEY"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "sps-menu-bot",
+      "database_id": "YOUR_D1_DATABASE_ID"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

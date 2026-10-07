@@ -1,0 +1,219 @@
+{
+  "days": [
+    {
+      "date": "2026-09-09",
+      "has_unpublished_menus": false,
+      "menu_items": [
+        {
+          "position": 0,
+          "is_section_title": true,
+          "is_station_header": true,
+          "text": "Soup of the Day",
+          "food": null
+        },
+        {
+          "position": 1,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "New England Clam Chowder"
+          }
+        },
+        {
+          "position": 2,
+          "is_section_title": true,
+          "is_station_header": true,
+          "text": "Entrée",
+          "food": null
+        },
+        {
+          "position": 3,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Old Fashioned Meatloaf (beef/pork)"
+          }
+        },
+        {
+          "position": 4,
+          "is_section_title": true,
+          "is_station_header": true,
+          "text": "Vegetarian Entree",
+          "food": null
+        },
+        {
+          "position": 5,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Baked Beet & Butternut Loaf"
+          }
+        },
+        {
+          "position": 6,
+          "is_section_title": true,
+          "is_station_header": true,
+          "text": "Sides",
+          "food": null
+        },
+        {
+          "position": 7,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Macaroni & Cheese"
+          }
+        },
+        {
+          "position": 8,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Steamed Broccoli"
+          }
+        },
+        {
+          "position": 9,
+          "is_section_title": true,
+          "is_station_header": true,
+          "text": "Power Bar",
+          "food": null
+        },
+        {
+          "position": 10,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Grilled Chicken Breast"
+          }
+        },
+        {
+          "position": 11,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Roasted Sweet Potato Medallions"
+          }
+        },
+        {
+          "position": 12,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Vegetable DuJour"
+          }
+        },
+        {
+          "position": 13,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Daily Tofu"
+          }
+        },
+        {
+          "position": 14,
+          "is_section_title": true,
+          "is_station_header": true,
+          "text": "Pasta",
+          "food": null
+        },
+        {
+          "position": 15,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "House-made Marinara Sauce"
+          }
+        },
+        {
+          "position": 16,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Creamy Parmesan Alfredo Sauce"
+          }
+        },
+        {
+          "position": 17,
+          "is_section_title": true,
+          "is_station_header": true,
+          "text": "International Fare",
+          "food": null
+        },
+        {
+          "position": 18,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Jasmine Rice"
+          }
+        },
+        {
+          "position": 19,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Seasoned Rice Vinegar"
+          }
+        },
+        {
+          "position": 20,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Soy Sauce"
+          }
+        },
+        {
+          "position": 21,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Less Sodium Soy Sauce"
+          }
+        },
+        {
+          "position": 22,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Furikake"
+          }
+        },
+        {
+          "position": 23,
+          "is_section_title": true,
+          "is_station_header": true,
+          "text": "Dessert",
+          "food": null
+        },
+        {
+          "position": 24,
+          "is_section_title": false,
+          "is_station_header": false,
+          "text": "",
+          "food": {
+            "name": "Berry Cheesecake Bars"
+          }
+        }
+      ]
+    }
+  ]
+}

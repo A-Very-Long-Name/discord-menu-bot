@@ -1,0 +1,22 @@
+{
+  "name": "sps-menu-bot",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "deploy": "wrangler deploy",
+    "register": "node --env-file=.env scripts/register.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  },
+  "overrides": {
+    "sharp": "^0.35.4"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "dependencies": {
+    "parse5": "^8.0.1"
+  }
+}
