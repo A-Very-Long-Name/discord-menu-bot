@@ -2,6 +2,8 @@
 
 A multi-school Discord dining app with lunch and dinner menus, scheduled reminders, and persistent entrée ratings. Runs on Cloudflare Workers and D1 using Discord HTTP interactions; no continuously running server or Gateway connection is required.
 
+NOTE: Code and descriptions created by ChatGPT/Codex. All ideas are otherwise original.
+
 ## Install the hosted app
 
 [Install Discord Menu Bot](https://discord.com/oauth2/authorize?client_id=1547379813101076513)
@@ -153,4 +155,3 @@ The bot may appear offline because it uses HTTP interactions instead of a Gatewa
 Stored data includes Discord user IDs, school bindings, reminder channel IDs and times, dish names, vote states, and delivery records. `/votes` privately reveals voters' identities and saved states to any user who invokes it for that school. Keep this behavior in mind when using the hosted app or running your own instance.
 
 This is an independent community project and is not affiliated with the schools, dining providers, Discord, or Cloudflare.
-Code and descriptions created by ChatGPT/Codex. All ideas are otherwise original.
