@@ -71,9 +71,9 @@ Examples:
 /votes
 ```
 
-`/foodforall` queries the same date and meal for all schools and sends one card per school. Its defaults use Eastern time: today, with lunch before 14:00 and dinner afterward. Missing menus, closed meals, brunch substitutions, and retrieval errors are shown separately. Past ratings show existing school-wide totals; this command does not save votes or display voting controls.
+`/foodforall` queries the same date and meal for all schools and puts all schools in one message. If the menu exceeds Discord embed limits, the same message includes a full text attachment. Its defaults use Eastern time: lunch before 14:00 or from 20:00 onward; dinner from 14:00 to 19:59. Missing menus, closed meals, brunch substitutions, and retrieval errors are shown separately. Past ratings show existing school-wide totals; this command does not save votes or display voting controls.
 
-Dates use **MM/DD**, with the current year, within 31 days of today. Without a date, `/food` uses today in school time. Without a meal, it selects lunch before 14:00 and dinner afterward. In a configured server, queries use that server's school; otherwise they use your personal school. Use the bot's DM for personal queries. Menu queries are generally visible in the channel where invoked.
+Dates use **MM/DD**, with the current year, within 31 days of today. For both `/food` and `/foodforall`, an omitted date defaults to tomorrow when querying lunch at or after 14:00 or dinner at or after 20:00; otherwise it defaults to today. `/food` uses school local time, and `/foodforall` uses Eastern time. An explicit date always overrides this rule. An omitted meal selects lunch before 14:00 and from 20:00 onward, and dinner between those times. Scheduled reminders continue to use today’s menu. In a configured server, queries use that server's school; otherwise they use your personal school. Use the bot's DM for personal queries. Menu queries are generally visible in the channel where invoked.
 
 Breakfast and brunch queries reply:
 

@@ -26,3 +26,23 @@ export async function allSchoolMenus(env,meal,date,fetcher=fetch,loader=null){
  }
  return messages;
 }
+export function combineSchoolMenus(cards,meal,date){
+ const title=`All schools · ${meal[0].toUpperCase()+meal.slice(1)} · ${date.slice(5).replace('-','/')}`;
+ const footer='a bot by hydrogen_01';
+ const names=cards.map(c=>c.embeds[0].title.split(' · ')[0]);
+ const budget=Math.min(1024,Math.floor((5900-title.length-footer.length-names.reduce((n,x)=>n+x.length,0))/cards.length));
+ let truncated=false;
+ const full=[];
+ const fields=cards.map((c,index)=>{
+  const e=c.embeds[0];const ratings=e.fields?.map(f=>`**${f.name}**\n${f.value}`).join('\n')||'';
+  full.push(`${names[index]}\n${e.description}\n${ratings}\n${e.url}`);
+  const source=`[Original menu](${e.url})`;
+  let value=`${e.description}\n\n${ratings}\n${source}`;
+  if(value.length>budget){truncated=true;const note='\n… Full menu in attached file.\n';const room=budget-ratings.length-source.length-note.length-2;
+   if(room>=50)value=e.description.slice(0,room)+note+ratings+'\n'+source;
+   else value=value.slice(0,budget-note.length)+note;
+  }
+  return {name:names[index],value};
+ });
+ return {allowed_mentions:{parse:[]},components:[],embeds:[{title,fields,color:0x244b3b,footer:{text:footer}}],...(truncated?{fullText:`${title}\n\n${full.join('\n\n')}`}:{})};
+}

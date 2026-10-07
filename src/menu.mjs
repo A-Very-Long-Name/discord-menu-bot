@@ -155,3 +155,8 @@ export function queryDate(value, today = localTime().date) {
 export function greeting(meal) {
   return meal === 'lunch' ? 'good morning, this is lunch today:' : 'good afternoon, this is dinner today:';
 }
+export function defaultQueryMeal(minutes){return minutes<840||minutes>=1200?'lunch':'dinner';}
+export function defaultQueryDate(local,meal){
+ if(local.minutes<(meal==='lunch'?840:1200))return local.date;
+ const day=new Date(local.date+'T12:00:00Z');day.setUTCDate(day.getUTCDate()+1);return day.toISOString().slice(0,10);
+}

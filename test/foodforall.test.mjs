@@ -18,3 +18,19 @@ test('all schools sorted, failed/empty meals preserved, historical ratings read-
  assert.match(cards.find(c=>c.embeds[0].title.startsWith("St. Paul's")).embeds[0].fields[0].value,/👍 3/);
  assert.equal(reads.length,8);
 });
+test('one message preserves every school and attaches full menus when Discord embed limits require shortening',async()=>{
+ const {combineSchoolMenus}=await import('../src/foodforall.mjs');
+ const cards=Object.values(SCHOOLS).map(s=>({embeds:[{title:s.name+' · Dinner',description:'A long menu '.repeat(100),url:'https://example.com/menu',fields:[{name:'Past ratings',value:'👍 3 · 🤔 1 · 👎 0'}]}]}));
+ const p=combineSchoolMenus(cards,'dinner','2026-10-07');assert.equal(p.embeds.length,1);assert.equal(p.embeds[0].fields.length,10);assert.equal(p.components.length,0);assert.ok(p.fullText.includes('A long menu '.repeat(100)));
+ const e=p.embeds[0];assert.ok(e.title.length+e.footer.text.length+e.fields.reduce((n,f)=>n+f.name.length+f.value.length,0)<=6000);
+ for(const f of e.fields){assert.ok(f.value.length<=1024);assert.match(f.value,/Past ratings/);}
+});
+test('meal cutoffs roll only omitted dates to tomorrow, including year boundary',async()=>{
+ const {defaultQueryDate,defaultQueryMeal,queryDate}=await import('../src/menu.mjs');
+ assert.equal(defaultQueryDate({date:'2026-12-31',minutes:1200},'dinner'),'2027-01-01');
+ assert.equal(defaultQueryDate({date:'2026-10-06',minutes:839},'lunch'),'2026-10-06');
+ assert.equal(defaultQueryDate({date:'2026-10-06',minutes:840},'lunch'),'2026-10-07');
+ assert.equal(defaultQueryDate({date:'2026-10-06',minutes:1199},'dinner'),'2026-10-06');
+ assert.equal(defaultQueryMeal(1200),'lunch');assert.equal(defaultQueryMeal(1199),'dinner');
+ assert.equal(queryDate('10/06','2026-10-07'),'2026-10-06');
+});

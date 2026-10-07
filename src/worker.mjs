@@ -1,11 +1,11 @@
-import {allSchoolMenus} from './foodforall.mjs';
+import {allSchoolMenus,combineSchoolMenus} from './foodforall.mjs';
 import {loadWra,refreshWra} from './wra.mjs';
 import {lunchReminderAllowed} from './schools.mjs';
 import {school} from './schools.mjs';
 import {bindingFor,configure} from './setup.mjs';
 import {ratedPayload, vote, refreshRatings} from './ratings.mjs';
 import {recentVoteMessages} from './votes.mjs';
-import {MEALS, localTime, scheduledMeal, queryDate, greeting, loadMenu, payload} from './menu.mjs';
+import {MEALS, localTime, scheduledMeal, queryDate, defaultQueryMeal, defaultQueryDate, greeting, loadMenu, payload} from './menu.mjs';
 const API = 'https://discord.com/api/v10';
 const json = value => Response.json(value);
 const reply = content => json({type: 4, data: {content, flags: 64, allowed_mentions: {parse: []}}});
@@ -21,9 +21,11 @@ export async function verify(request, body, publicKey) {
   } catch { return false; }
 }
 async function discord(path, method, body, token) {
+  let requestBody=body===undefined?undefined:JSON.stringify(body),multipart=false;
+  if(body?.fullText){const {fullText,...data}=body;data.attachments=[{id:0,filename:'school-menus.txt'}];requestBody=new FormData();requestBody.append('payload_json',JSON.stringify(data));requestBody.append('files[0]',new Blob([fullText],{type:'text/plain;charset=utf-8'}),'school-menus.txt');multipart=true;}
   for(let attempt=0;attempt<4;attempt++){
     const r = await fetch(API + path, {method, signal: AbortSignal.timeout(8000),
-      headers: {'Content-Type': 'application/json', ...(token ? {Authorization: `Bot ${token}`} : {})}, body: body === undefined ? undefined : JSON.stringify(body)});
+      headers: {...(multipart?{}:{'Content-Type':'application/json'}), ...(token ? {Authorization: `Bot ${token}`} : {})}, body: requestBody});
     // Retry only explicit rate limits; do not retry uncertain message submissions.
     if(r.status===429&&attempt<3){
       const limit=await r.json();const seconds=Number(limit.retry_after);
@@ -45,7 +47,7 @@ async function answer(i, meal, date, env) {
 export async function answerAllSchools(i,meal,date,env){
  try{
   const messages=await allSchoolMenus(env,meal,date);
-  for(const [index,data] of messages.entries())await discord(`/webhooks/${i.application_id}/${i.token}${index===0?'/messages/@original':''}`,index===0?'PATCH':'POST',data);
+  await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',combineSchoolMenus(messages,meal,date));
  }catch{
   console.error('All-school menu response failed');
   try{await discord(`/webhooks/${i.application_id}/${i.token}`,'POST',{content:'Some school menus could not be delivered. Please try again.',allowed_mentions:{parse:[]}});}catch{}
@@ -140,9 +142,9 @@ export default {
     if (i.type !== 2 || !['food','foodforall'].includes(i.data?.name)) return reply('Unknown command.');
     const options = Object.fromEntries((i.data.options || []).map(x => [x.name,x.value]));
     const local = localTime(new Date(),school(env.SCHOOL_ID).zone);
-    const meal = options.meal || (local.minutes < 840 ? 'lunch' : 'dinner');
+    const meal = options.meal || defaultQueryMeal(local.minutes);
     if (meal === 'breakfast' || meal === 'brunch') return json({type:4, data:{content:"bro they're literally the same thing every time, currently not supported", allowed_mentions:{parse:[]}}});
-    const date = queryDate(options.date, local.date);
+    const date = queryDate(options.date, options.date ? local.date : defaultQueryDate(local,meal));
     if (!MEALS.includes(meal) || !date) return reply('Use breakfast, brunch, lunch or dinner; date must be MM/DD (current year).');
     if (Math.abs(Date.parse(date) - Date.parse(local.date)) > 31*86400000) return reply('Please select a date within 31 days of today.');
     ctx.waitUntil(i.data.name==='foodforall'?answerAllSchools(i,meal,date,env):answer(i, meal, date, env));
