@@ -1,9 +1,10 @@
+import {schoolIds,row,button} from './dashboard.mjs';
 import {SCHOOLS,school} from './schools.mjs';
 import {loadMenu,payload} from './menu.mjs';
 import {loadWra} from './wra.mjs';
 import {entrees,totals,summary} from './ratings.mjs';
-export async function allSchoolMenus(env,meal,date,fetcher=fetch,loader=null){
- const schools=Object.keys(SCHOOLS).sort((a,b)=>school(a).name.replace(/^The /,'').localeCompare(school(b).name.replace(/^The /,''),'en'));
+export async function allSchoolMenus(env,meal,date,fetcher=fetch,loader=null,selected=null){
+ const schools=selected||schoolIds;
  const messages=[];
  // Two providers at a time keep external requests bounded. Every school gets its own card.
  for(let offset=0;offset<schools.length;offset+=2){
@@ -45,4 +46,15 @@ export function combineSchoolMenus(cards,meal,date){
   return {name:names[index],value};
  });
  return {allowed_mentions:{parse:[]},components:[],embeds:[{title,fields,color:0x244b3b,footer:{text:footer}}],...(truncated?{fullText:`${title}\n\n${full.join('\n\n')}`}:{})};
+}
+
+export async function schoolPage(env,meal,date,owner,index=0,loader=null){
+ if(!['lunch','dinner'].includes(meal)||!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Invalid menu page. Run /foodforall again.');
+ index=((index%schoolIds.length)+schoolIds.length)%schoolIds.length;
+ const [card]=await allSchoolMenus(env,meal,date,fetch,loader,[schoolIds[index]]);
+ card.content='';card.attachments=[];
+ card.embeds[0].footer.text+=` · School ${index+1}/${schoolIds.length}`;
+ const prefix=`browse:${owner}:${meal}:${date}:`;
+ card.components=[row(button('Previous',prefix+((index+schoolIds.length-1)%schoolIds.length)),button('Next',prefix+((index+1)%schoolIds.length))),row({type:3,custom_id:prefix+'select',placeholder:'Jump to a school',options:schoolIds.map((id,n)=>({label:school(id).name,value:String(n),default:n===index}))})];
+ return card;
 }

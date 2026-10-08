@@ -40,7 +40,7 @@ test('/votes accepts an ordinary member and defers privately',async()=>{
  const stamp=String(Math.floor(Date.now()/1000));
  const sig=Buffer.from(await crypto.subtle.sign('Ed25519',keys.privateKey,new TextEncoder().encode(stamp+body))).toString('hex');
  const request=new Request('https://bot.example/interactions',{method:'POST',body,headers:{'x-signature-ed25519':sig,'x-signature-timestamp':stamp}});
- const {db,env}=database();db.exec("CREATE TABLE school_bindings(scope_id TEXT,school TEXT);INSERT INTO school_bindings VALUES('guild:guild','sps')");env.DB.prepare=(sql)=>({bind(...args){return {async first(){return db.prepare(sql).get(...args)},async all(){return {results:db.prepare(sql).all(...args)}}}}}); const tasks=[];const original=globalThis.fetch;
+ const {db,env}=database();db.exec("CREATE TABLE school_selections(scope_id TEXT PRIMARY KEY,schools TEXT);CREATE TABLE school_bindings(scope_id TEXT,school TEXT);INSERT INTO school_bindings VALUES('guild:guild','sps')");env.DB.prepare=(sql)=>({bind(...args){return {async first(){return db.prepare(sql).get(...args)},async all(){return {results:db.prepare(sql).all(...args)}}}}}); const tasks=[];const original=globalThis.fetch;
  globalThis.fetch=async()=>Response.json({id:'1'});
  try {
  const response=await worker.fetch(request,{...env,DISCORD_PUBLIC_KEY:pub,DISCORD_GUILD_ID:'guild',DISCORD_APPLICATION_ID:'app'},{waitUntil(p){tasks.push(p)}});
