@@ -1,4 +1,6 @@
-import {allSchoolMenus,combineSchoolMenus} from './foodforall.mjs';
+import {schoolPage} from './foodforall.mjs';
+import {settingDashboard,changeSetting,timesModal,defaultScope,actorId,schoolIds} from './dashboard.mjs';
+import {leaderboard} from './leaderboard.mjs';
 import {loadWra,refreshWra} from './wra.mjs';
 import {lunchReminderAllowed} from './schools.mjs';
 import {school} from './schools.mjs';
@@ -46,8 +48,7 @@ async function answer(i, meal, date, env) {
 }
 export async function answerAllSchools(i,meal,date,env){
  try{
-  const messages=await allSchoolMenus(env,meal,date);
-  await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',combineSchoolMenus(messages,meal,date));
+  await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',await schoolPage(env,meal,date,actorId(i)));
  }catch{
   console.error('All-school menu response failed');
   try{await discord(`/webhooks/${i.application_id}/${i.token}`,'POST',{content:'Some school menus could not be delivered. Please try again.',allowed_mentions:{parse:[]}});}catch{}
@@ -107,6 +108,51 @@ async function ensureScopeSchema(env){
  if(!scopeSchemaReady.has(env.DB)){const pending=env.DB.exec('CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));').catch(error=>{scopeSchemaReady.delete(env.DB);throw error});scopeSchemaReady.set(env.DB,pending);}
  await scopeSchemaReady.get(env.DB);
 }
+// Acknowledge slow work before menu requests or database updates.
+export function interactiveResponse(i,env,ctx,api=discord){
+ const actor=actorId(i);
+ const command=i.type===2?i.data?.name:null;
+ const id=i.data?.custom_id||'';
+ const parts=id.split(':');
+ const isComponent=[3,5].includes(i.type)&&['setting','browse','board'].includes(parts[0]);
+ if(!isComponent&&!['setting','leaderboard'].includes(command))return null;
+ const privateReply=content=>({type:4,data:{content,flags:64,allowed_mentions:{parse:[]}}});
+ if(!actor)return privateReply('User unavailable.');
+ if(isComponent){
+  if(parts[1]!==actor)return privateReply('Open your own /setting, /foodforall or /leaderboard to use these controls.');
+  if(i.type===3&&(i.message?.author?.id!==env.DISCORD_APPLICATION_ID||!i.message.components?.some(r=>r.components?.some(c=>c.custom_id===id))))return privateReply('This control is unavailable. Run the command again.');
+  if(i.type===5&&(parts[0]!=='setting'||parts[3]!=='save-times'))return privateReply('This form is unavailable. Run /setting again.');
+  if(parts[0]==='setting'&&parts[3]==='times'){
+   try{return timesModal(i,parts[2]);}catch(error){return privateReply(error.message);}
+  }
+ }
+ const update=isComponent&&(i.type===3||Boolean(i.message));
+ ctx.waitUntil((async()=>{
+  let data;
+  try{
+   if(command==='setting')data=await settingDashboard(env,i,i.data.options?.find(o=>o.name==='scope')?.value||defaultScope(i));
+   else if(command==='leaderboard')data=await leaderboard(env,i.data.options?.[0]?.name||'dishes',actor);
+   else if(parts[0]==='setting')data=await changeSetting(env,i,parts[2],parts[3],api);
+   else if(parts[0]==='browse'){
+    const page=parts[4]==='select'?i.data.values?.[0]:parts[4];
+    if(!/^\d+$/.test(page||'')||Number(page)>=schoolIds.length)throw Error('Invalid menu page. Run /foodforall again.');
+    data=await schoolPage(env,parts[2],parts[3],actor,Number(page));
+   }else{
+    if(!/^\d+$/.test(parts[3]||''))throw Error('Invalid leaderboard page.');
+    data=await leaderboard(env,parts[2],actor,Number(parts[3]));
+   }
+  }catch(error){
+   console.error('Interactive command failed');
+   // Expected validation errors are safe text; never expose database or API internals.
+   const known=/^(Choose |Manage Server|Install the app|User unavailable|Invalid |Unknown settings)/.test(error.message||'');
+   const content=known?error.message:'Could not load or save this view. Please run the command again.';
+   if(update){try{await api(`/webhooks/${i.application_id}/${i.token}`,'POST',{content,flags:64,allowed_mentions:{parse:[]}});}catch{}return;}
+   data={content,embeds:[],components:[],allowed_mentions:{parse:[]}};
+  }
+  try{await api(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',data);}catch{console.error('Interactive response delivery failed');}
+ })());
+ return update?{type:6}:{type:5,data:{flags:64}};
+}
 export default {
   async fetch(request, env, ctx) {
     await ensureScopeSchema(env);
@@ -119,6 +165,8 @@ export default {
     if (i.application_id !== env.DISCORD_APPLICATION_ID) return reply('This bot is configured for another server.');
     const actor=i.member?.user||i.user;
     env={...env,VOTE_SCOPE:i.guild_id?`guild:${i.guild_id}`:actor?.id?`user:${actor.id}`:'unscoped'};
+    const interactive=interactiveResponse(i,env,ctx);
+    if(interactive)return json(interactive);
     if(i.type===3) {
       ctx.waitUntil((async()=>{
         try {
@@ -141,7 +189,7 @@ export default {
     if(i.type === 2 && ['food','foodforall'].includes(i.data?.name) && (i.data.options||[]).some(o=>o.name==='meal' && ['breakfast','brunch'].includes(o.value))) return json({type:4,data:{content:"bro they're literally the same thing every time, currently not supported",allowed_mentions:{parse:[]}}});
     if(i.type === 2 && ['food','votes'].includes(i.data?.name)) {
       const binding=await bindingFor(env,i);
-      if(!binding)return reply('Welcome! Run /setup to choose your school, reminder times, and personal or server use.');
+      if(!binding)return reply('Welcome! Run /setting to choose your school, reminder times, and personal or server use.');
       env={...env,SCHOOL_ID:binding.school,PERSONAL_MODE:binding.scope_id?.startsWith('user:')};
     }
     if (i.type === 2 && i.data?.name === 'votes') {

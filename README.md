@@ -8,7 +8,7 @@ NOTE: Code and descriptions created by ChatGPT/Codex. All ideas are otherwise or
 
 [Install Discord Menu Bot](https://discord.com/oauth2/authorize?client_id=1547379813101076513)
 
-Choose **Add to My Apps** for personal use or **Add to Server** for a shared server. Server installation requires permission to manage the server. Run `/setup` after installation to select your school and notification times.
+Choose **Add to My Apps** for personal use or **Add to Server** for a shared server. Server installation requires permission to manage the server. Run `/setting` after installation to select your school and notification times using the interactive dashboard.
 
 Personal DM reminders also require Discord to allow the bot to send you direct messages. Setup checks delivery; if Discord blocks it, your school remains saved and reminders are disabled until you retry setup. Personal installation alone does not guarantee DM access.
 
@@ -59,8 +59,11 @@ Self-hosted existing installations must create the `menu_cache` table using `mig
 
 | Command | Options | Behavior |
 | --- | --- | --- |
+| `/setting` | `scope` | Private dashboard: school, reminders, notification times, and server channel |
+| `/leaderboard dishes` | None | Paginated all-time dish rankings across schools in the current server or personal DM |
+| `/leaderboard schools` | None | School totals ranked by likes minus dislikes in the current server or personal DM |
 | `/setup` | `school` (required), `scope`, `lunch_notification`, `dinner_notification`, `channel`, `reminders` | Select a school and configure personal or server reminders; reply is private |
-| `/foodforall` | `meal`, `date` | Display every supported school in A–Z order, including missing-menu notices and read-only Past ratings; no voting buttons or setup required |
+| `/foodforall` | `meal`, `date` | Browse one school at a time with Previous/Next and a school selector; no voting buttons or setup required |
 | `/food` | `meal`, `date` | Display lunch or dinner with historical ratings |
 | `/votes` | None | Show saved vote states for today's and the previous two days' menu dates; visible only to the requester, available to everyone; records isolated by server or personal DM |
 
@@ -73,7 +76,22 @@ Examples:
 /votes
 ```
 
-`/foodforall` queries the same date and meal for all schools and puts all schools in one message. If the menu exceeds Discord embed limits, the same message includes a full text attachment. Its defaults use Eastern time: lunch before 14:00 or from 20:00 onward; dinner from 14:00 to 19:59. Missing menus, closed meals, brunch substitutions, and retrieval errors are shown separately. Past ratings show existing totals for the current server or personal DM; this command does not save votes or display voting controls.
+`/foodforall` opens a single school menu card. Previous/Next wrap through all ten schools in A–Z order; the dropdown jumps directly to a school. Each navigation loads only the selected school's menu and keeps the requested meal and date. Only the person who ran the command can navigate that message; others can run their own command. Missing-menu notices and read-only Past ratings remain available. Defaults use Eastern time. The command does not offer voting controls.
+
+### Settings dashboard
+
+Run `/setting` or `/setting scope:Personal`. Choose Personal or Server, select a school, toggle reminders, and use **Change times** to enter lunch/dinner times in `HH:mm` format. Blank time fields keep their saved values. For server settings, choose a reminder channel with the channel selector. Changes save immediately; **Refresh** reloads saved settings. The dashboard is private and its controls belong to its opener. Server changes require Manage Server or Administrator permission on every interaction. Existing `/setup` commands still work.
+
+A first dashboard school selection saves with reminders off; enable them explicitly. Personal reminder activation checks DM delivery and explains if Discord blocks it. Existing preferences are retained when switching schools, with times interpreted in the new school's timezone.
+
+### Leaderboards
+
+Use `/leaderboard dishes` or `/leaderboard schools`. Both show private, paginated all-time results for the current server or your personal DM, across all supported schools. **Score = likes − dislikes**; fine ratings contribute zero, withdrawn votes are excluded. Dish entries combine that school's ratings for the same normalized dish name across menu dates. School scores sum the scores of all their dishes. Whole meal/date menus are not separately rated by the existing vote model.
+
+Ties sort by most likes, then school and dish name (school IDs for dish ties). School rankings include unrated schools with zero scores; dish rankings include dishes with active ratings, including neutral-only dishes. Previous/Next browse ten entries per page; Refresh recomputes the scores. Rankings do not mix votes between servers or personal DMs.
+
+After deploying this update, run `npm run register` with the app owner's credentials to register `/setting` and `/leaderboard`. No additional database migration is required for an installation already using `vote_scope_states`.
+
 
 Dates use **MM/DD**, with the current year, within 31 days of today. For both `/food` and `/foodforall`, an omitted date defaults to tomorrow when querying lunch at or after 14:00 or dinner at or after 20:00; otherwise it defaults to today. `/food` uses school local time, and `/foodforall` uses Eastern time. An explicit date always overrides this rule. An omitted meal selects lunch before 14:00 and from 20:00 onward, and dinner between those times. Scheduled reminders continue to use today’s menu. In a configured server, queries use that server's school; otherwise they use your personal school. Use the bot's DM for personal queries. Menu queries are generally visible in the channel where invoked.
 
@@ -138,7 +156,7 @@ Fill `.env` locally with your Application ID and Bot Token. `DISCORD_GUILD_ID` i
 npm run register
 ```
 
-Registration enables user and server installation and creates global `/setup`, `/food`, and `/votes` commands. Use your own application's install link for a self-hosted instance, replacing the hosted app's client ID with yours. Enable User Install and Guild Install in the Developer Portal if necessary. No privileged Message Content, Presence, or Server Members intents are needed.
+Registration enables user and server installation and creates global `/setting`, `/setup`, `/food`, `/foodforall`, `/votes`, and `/leaderboard` commands. Use your own application's install link for a self-hosted instance, replacing the hosted app's client ID with yours. Enable User Install and Guild Install in the Developer Portal if necessary. No privileged Message Content, Presence, or Server Members intents are needed.
 
 6. Install your app, run `/setup`, and try `/food`. Discord may need a refresh before updated global command choices appear.
 

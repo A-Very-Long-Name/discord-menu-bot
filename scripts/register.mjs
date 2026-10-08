@@ -7,7 +7,9 @@ async function api(path,method,body){
  if(!r.ok)throw new Error(`Discord HTTP ${r.status}`);return r.status===204?null:r.json();
 }
 const commands=[
- {name:'foodforall',description:'View every school’s menu and past ratings (no voting)',options:[
+ {name:'setting',description:'Open your school and reminder dashboard',options:[{type:3,name:'scope',description:'Personal or server settings',choices:[{name:'Personal',value:'personal'},{name:'Server',value:'server'}]}]},
+ {name:'leaderboard',description:'Rank dishes and schools by likes minus dislikes',options:[{type:1,name:'dishes',description:'Rank dishes across schools in this server or personal DM'},{type:1,name:'schools',description:'Rank schools by total likes minus dislikes'}]},
+ {name:'foodforall',description:'Browse school menus one at a time (no voting)',options:[
   {type:3,name:'meal',description:'Meal (default: lunch before 2pm/after 8pm Eastern; otherwise dinner)',choices:MEALS.map(value=>({name:value,value}))},
   {type:3,name:'date',description:'MM/DD (current year; default: next day after meal cutoff, Eastern time)'}]},
  {name:'food',description:'View your school dining menu',options:[
@@ -30,4 +32,4 @@ await api('/applications/@me','PATCH',{integration_types_config:{
 for(const entry of commands)await api(`/applications/${app}/commands`,'POST',{...entry,type:1,default_member_permissions:null,integration_types:[0,1],contexts:[0,1,2]});
 // Retire our guild duplicates only after all global commands are registered.
 if(guild)for(const old of await api(`/applications/${app}/guilds/${guild}/commands`,'GET'))if(['menu','food','votes','setup'].includes(old.name)&&old.type===1)await api(`/applications/${app}/guilds/${guild}/commands/${old.id}`,'DELETE');
-console.log('Registered global /food, /foodforall, /votes and /setup for personal and server installs.');
+console.log('Registered global /food, /foodforall, /votes, /setup, /setting and /leaderboard for personal and server installs.');
