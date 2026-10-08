@@ -1,16 +1,17 @@
+import {selectedSchools} from './selections.mjs';
 import {schoolPage} from './foodforall.mjs';
 import {settingDashboard,changeSetting,timesModal,defaultScope,actorId,schoolIds} from './dashboard.mjs';
 import {leaderboard} from './leaderboard.mjs';
 import {loadWra,refreshWra} from './wra.mjs';
 import {lunchReminderAllowed} from './schools.mjs';
 import {school} from './schools.mjs';
-import {bindingFor,configure} from './setup.mjs';
+import {bindingFor} from './setup.mjs';
 import {ratedPayload, vote, refreshRatings} from './ratings.mjs';
 import {recentVoteMessages} from './votes.mjs';
 import {MEALS, localTime, scheduledMeal, queryDate, defaultQueryMeal, defaultQueryDate, greeting, loadMenu, payload} from './menu.mjs';
 const API = 'https://discord.com/api/v10';
 const json = value => Response.json(value);
-const reply = content => json({type: 4, data: {content, flags: 64, allowed_mentions: {parse: []}}});
+const reply = content => json({type: 4, data: {content, allowed_mentions: {parse: []}}});
 function hex(s) { return Uint8Array.from(s.match(/.{2}/g), x => parseInt(x, 16)); }
 export async function verify(request, body, publicKey) {
   const sig = request.headers.get('x-signature-ed25519') || '';
@@ -59,12 +60,12 @@ export async function answerVotes(i, env, today = null) {
     const messages = await recentVoteMessages(env, today || localTime(new Date(),school(env.SCHOOL_ID).zone).date);
     for (const [index,data] of messages.entries()) {
       await discord(`/webhooks/${i.application_id}/${i.token}${index === 0 ? '/messages/@original' : ''}`,
-        index === 0 ? 'PATCH' : 'POST', {...data,flags:64});
+        index === 0 ? 'PATCH' : 'POST', data);
     }
   } catch {
     console.error('Failed to deliver vote history');
     try { await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',
-      {content:'Vote history is unavailable. Please try again.',flags:64,allowed_mentions:{parse:[]}}); } catch {}
+      {content:'Vote history is unavailable. Please try again.',allowed_mentions:{parse:[]}}); } catch {}
   }
 }
 export async function sendScheduled(env, now = new Date()) {
@@ -105,7 +106,7 @@ export async function sendScheduled(env, now = new Date()) {
 const scopeSchemaReady=new WeakMap();
 async function ensureScopeSchema(env){
  if(!env.DB?.exec)return;
- if(!scopeSchemaReady.has(env.DB)){const pending=env.DB.exec('CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));').catch(error=>{scopeSchemaReady.delete(env.DB);throw error});scopeSchemaReady.set(env.DB,pending);}
+ if(!scopeSchemaReady.has(env.DB)){const pending=env.DB.exec('CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));CREATE TABLE IF NOT EXISTS school_selections(scope_id TEXT PRIMARY KEY,schools TEXT NOT NULL);').catch(error=>{scopeSchemaReady.delete(env.DB);throw error});scopeSchemaReady.set(env.DB,pending);}
  await scopeSchemaReady.get(env.DB);
 }
 // Acknowledge slow work before menu requests or database updates.
@@ -116,7 +117,9 @@ export function interactiveResponse(i,env,ctx,api=discord){
  const parts=id.split(':');
  const isComponent=[3,5].includes(i.type)&&['setting','browse','board'].includes(parts[0]);
  if(!isComponent&&!['setting','leaderboard'].includes(command))return null;
- const privateReply=content=>({type:4,data:{content,flags:64,allowed_mentions:{parse:[]}}});
+ const settings=command==='setting'||parts[0]==='setting';
+ const visibility=settings?{flags:64}:{};
+ const privateReply=content=>({type:4,data:{content,...visibility,allowed_mentions:{parse:[]}}});
  if(!actor)return privateReply('User unavailable.');
  if(isComponent){
   if(parts[1]!==actor)return privateReply('Open your own /setting, /foodforall or /leaderboard to use these controls.');
@@ -131,7 +134,11 @@ export function interactiveResponse(i,env,ctx,api=discord){
   let data;
   try{
    if(command==='setting')data=await settingDashboard(env,i,i.data.options?.find(o=>o.name==='scope')?.value||defaultScope(i));
-   else if(command==='leaderboard')data=await leaderboard(env,i.data.options?.[0]?.name||'dishes',actor);
+   else if(command==='leaderboard'){
+    const option=i.data.options?.[0];const mode=option?.name||'global';
+    if(mode==='global'&&!i.guild_id)throw Error('Choose /leaderboard personal in DMs. Global rankings require a server.');
+    data=await leaderboard(env,option?.options?.find(o=>o.name==='type')?.value||'dishes',actor,0,mode);
+   }
    else if(parts[0]==='setting')data=await changeSetting(env,i,parts[2],parts[3],api);
    else if(parts[0]==='browse'){
     const page=parts[4]==='select'?i.data.values?.[0]:parts[4];
@@ -139,19 +146,19 @@ export function interactiveResponse(i,env,ctx,api=discord){
     data=await schoolPage(env,parts[2],parts[3],actor,Number(page));
    }else{
     if(!/^\d+$/.test(parts[3]||''))throw Error('Invalid leaderboard page.');
-    data=await leaderboard(env,parts[2],actor,Number(parts[3]));
+    data=await leaderboard(env,parts[2],actor,Number(parts[3]),parts[4]==='personal'?'personal':'global');
    }
   }catch(error){
    console.error('Interactive command failed');
    // Expected validation errors are safe text; never expose database or API internals.
    const known=/^(Choose |Manage Server|Install the app|User unavailable|Invalid |Unknown settings)/.test(error.message||'');
    const content=known?error.message:'Could not load or save this view. Please run the command again.';
-   if(update){try{await api(`/webhooks/${i.application_id}/${i.token}`,'POST',{content,flags:64,allowed_mentions:{parse:[]}});}catch{}return;}
+   if(update){try{await api(`/webhooks/${i.application_id}/${i.token}`,'POST',{content,...visibility,allowed_mentions:{parse:[]}});}catch{}return;}
    data={content,embeds:[],components:[],allowed_mentions:{parse:[]}};
   }
   try{await api(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',data);}catch{console.error('Interactive response delivery failed');}
  })());
- return update?{type:6}:{type:5,data:{flags:64}};
+ return update?{type:6}:settings?{type:5,data:{flags:64}}:{type:5};
 }
 export default {
   async fetch(request, env, ctx) {
@@ -179,13 +186,6 @@ export default {
       // Acknowledge the button silently and update its original message.
       return json({type:6});
     }
-    if(i.type === 2 && i.data?.name === 'setup') {
-      ctx.waitUntil((async()=>{
-        let content;try{content=await configure(env,i,discord)}catch{content='Settings could not be saved. Please try again.'}
-        try{await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',{content,allowed_mentions:{parse:[]}})}catch{console.error('Setup response failed')}
-      })());
-      return json({type:5,data:{flags:64}});
-    }
     if(i.type === 2 && ['food','foodforall'].includes(i.data?.name) && (i.data.options||[]).some(o=>o.name==='meal' && ['breakfast','brunch'].includes(o.value))) return json({type:4,data:{content:"bro they're literally the same thing every time, currently not supported",allowed_mentions:{parse:[]}}});
     if(i.type === 2 && ['food','votes'].includes(i.data?.name)) {
       const binding=await bindingFor(env,i);
@@ -195,7 +195,7 @@ export default {
     if (i.type === 2 && i.data?.name === 'votes') {
       const user=i.member?.user||i.user;
       ctx.waitUntil(answerVotes(i,{...env,VOTE_SCOPE:i.guild_id?`guild:${i.guild_id}`:`user:${user.id}`}));
-      return json({type:5,data:{flags:64}});
+      return json({type:5});
     }
     if (i.type !== 2 || !['food','foodforall'].includes(i.data?.name)) return reply('Unknown command.');
     const options = Object.fromEntries((i.data.options || []).map(x => [x.name,x.value]));
@@ -219,8 +219,8 @@ export default {
     };
     const now=new Date();
     try{await refreshWra(env,now,localTime(now));}catch{console.error('WRA weekly refresh unavailable');}
-    for(const binding of results)for(const meal of ['lunch','dinner']) {
-      try{await sendScheduled({...env,SCHOOL_ID:binding.school,VOTE_SCOPE:binding.scope_id,DISCORD_CHANNEL_ID:binding.channel_id,BINDING:binding,PERSONAL_MODE:binding.scope_id.startsWith('user:'),MEAL_FORCE:meal,MENU_FETCHER:menuFetcher},now)}catch{console.error('Reminder delivery failed')}
+    for(const binding of results)for(const schoolId of await selectedSchools(env,binding))for(const meal of ['lunch','dinner']) {
+      try{await sendScheduled({...env,SCHOOL_ID:schoolId,VOTE_SCOPE:binding.scope_id,DISCORD_CHANNEL_ID:binding.channel_id,BINDING:binding,PERSONAL_MODE:binding.scope_id.startsWith('user:'),MEAL_FORCE:meal,MENU_FETCHER:menuFetcher},now)}catch{console.error('Reminder delivery failed')}
     }
   }
 };

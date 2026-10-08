@@ -16,7 +16,7 @@ const server={...personal,guild_id:'g',channel_id:'c',member:{user:{id:'123'},pe
 test('dashboard saves school, reminder toggle and modal times; existing settings survive changes',async()=>{
  const {db,env}=database();const calls=[];
  const api=async(path,method,body)=>{calls.push({path,body});return {id:'dm'}};
- assert.match((await settingDashboard(env,personal,'personal')).embeds[0].description,/Choose a school/);
+ assert.match((await settingDashboard(env,personal,'personal')).embeds[0].description,/Choose one or more schools/);
  await changeSetting(env,{...personal,data:{values:['cate']}},'personal','school',api);
  assert.equal(calls.length,0);assert.equal(db.prepare('SELECT enabled FROM school_bindings').get().enabled,0);
  await changeSetting(env,personal,'personal','on',api);assert.equal(calls.length,2);
@@ -75,8 +75,8 @@ test('interaction routing defers work, updates existing messages, and rejects an
  const modal=interactiveResponse({...select,data:{custom_id},message:{author:{id:'bot'},components:dash.components}},env,ctx,api);assert.equal(modal.type,9);
  const submit={...personal,type:5,message:select.message,data:{custom_id:modal.data.custom_id,components:[{component:{custom_id:'dinner',value:'16:20'}}]}};
  assert.deepEqual(interactiveResponse(submit,env,ctx,api),{type:6});await Promise.all(tasks);assert.equal(db.prepare('SELECT dinner_min FROM school_bindings').get().dinner_min,980);
- const board={...personal,type:2,data:{name:'leaderboard',options:[{name:'schools',type:1}]}};
- assert.equal(interactiveResponse(board,env,ctx,api).type,5);await Promise.all(tasks);assert.equal(calls.at(-1).data.embeds[0].title,'School leaderboard');db.close();
+ const board={...personal,type:2,data:{name:'leaderboard',options:[{name:'personal',type:1,options:[{name:'type',value:'schools'}]}]}};
+ assert.deepEqual(interactiveResponse(board,env,ctx,api),{type:5});await Promise.all(tasks);assert.equal(calls.at(-1).data.embeds[0].title,'School leaderboard');db.close();
 });
 test('interactive payloads fit Discord limits and use unique control IDs, including page boundaries',async()=>{
  const {db,env}=database();
@@ -88,4 +88,44 @@ test('interactive payloads fit Discord limits and use unique control IDs, includ
   for(const e of view.embeds){assert.ok(e.description.length<=4096);assert.ok(e.title.length<=256)}
  }
  db.close();
+});
+test('multiple selected schools persist, survive time changes, and can be removed; legacy bindings still work',async()=>{
+ const {selectedSchools}=await import('../src/selections.mjs');
+ const {db,env}=database();const api=async()=>({id:'dm'});
+ await changeSetting(env,{...personal,data:{values:['sps','cate','loomis']}},'personal','school',api);
+ let binding=db.prepare('SELECT * FROM school_bindings').get();
+ assert.deepEqual(await selectedSchools(env,binding),['sps','cate','loomis']);
+ let dashboard=await settingDashboard(env,personal,'personal');const select=dashboard.components[1].components[0];
+ assert.equal(select.max_values,10);assert.equal(select.options.filter(o=>o.default).length,3);
+ await changeSetting(env,{...personal,data:{components:[{component:{custom_id:'lunch',value:'08:30'}}]}},'personal','save-times',api);
+ assert.deepEqual(await selectedSchools(env,binding),['sps','cate','loomis']);
+ await changeSetting(env,{...personal,data:{values:['cate']}},'personal','school',api);
+ binding=db.prepare('SELECT * FROM school_bindings').get();assert.equal(binding.school,'cate');assert.deepEqual(await selectedSchools(env,binding),['cate']);
+ await assert.rejects(()=>changeSetting(env,{...personal,data:{values:[]}},'personal','school',api),/at least one/);
+ db.prepare('DELETE FROM school_selections').run();assert.deepEqual(await selectedSchools(env,binding),['cate']);db.close();
+});
+test('global counts every server voter; personal counts only the requester within that server',async()=>{
+ const {db,env}=database();const insert=db.prepare('INSERT INTO vote_scope_states VALUES(?,?,?,?,?,?)');
+ for(const [scope,user,value] of [['guild:g','123',1],['guild:g','456',-1],['guild:g','789',1],['guild:elsewhere','123',1],['user:123','123',-1]])insert.run(scope,'sps','chicken','2026-10-07',user,value);
+ const scoped={...env,VOTE_SCOPE:'guild:g'};
+ const global=await leaderboard(scoped,'dishes','123',0,'global');assert.match(global.embeds[0].description,/👍 2 · 👎 1/);
+ const own=await leaderboard(scoped,'dishes','123',0,'personal');assert.match(own.embeds[0].description,/👍 1 · 👎 0/);assert.match(own.components[0].components[1].custom_id,/:personal:/);
+ const calls=[],tasks=[];const ctx={waitUntil:p=>tasks.push(p)},api=async(path,method,data)=>calls.push(data);
+ const command={...server,type:2,data:{name:'leaderboard',options:[{name:'global',type:1,options:[{name:'type',value:'schools'}]}]}};
+ assert.deepEqual(interactiveResponse(command,scoped,ctx,api),{type:5});await Promise.all(tasks);assert.equal(calls[0].flags,undefined);assert.equal(calls[0].embeds[0].title,'School leaderboard');
+ const view=own,custom_id=view.components[0].components[1].custom_id;
+ assert.deepEqual(interactiveResponse({...server,type:3,message:{author:{id:'bot'},components:view.components},data:{custom_id}},scoped,ctx,api),{type:6});await Promise.all(tasks);assert.match(calls.at(-1).embeds[0].description,/👍 1 · 👎 0/);db.close();
+});
+test('scheduler sends each selected school once with independent delivery keys',async t=>{
+ const {default:worker}=await import('../src/worker.mjs');
+ t.mock.timers.enable({apis:['Date'],now:new Date('2026-10-06T19:00:00Z')});
+ const {db,env}=database();
+ db.exec("INSERT INTO school_bindings VALUES('user:123','sps','dm',420,900,1)");
+ db.prepare('INSERT INTO school_selections VALUES(?,?)').run('user:123',JSON.stringify(['sps','loomis']));
+ const original=globalThis.fetch,sent=[];
+ globalThis.fetch=async(url,opts)=>{
+  if(url.includes('flikisdining'))return Response.json({days:[{date:'2026-10-06',menu_items:[{is_section_title:true,text:'Entrée',position:0},{food:{name:'Chicken'},position:1},{is_section_title:true,text:'Grill Main',position:2},{food:{name:'Burger'},position:3}]}]});
+  sent.push(JSON.parse(opts.body));return Response.json({id:String(sent.length)});
+ };
+ try{await worker.scheduled({},env);await worker.scheduled({},env);assert.equal(sent.length,2);assert.ok(sent.some(m=>m.embeds[0].title.includes('Coit')));assert.ok(sent.some(m=>m.embeds[0].title.includes('Loomis')));assert.equal(db.prepare('SELECT COUNT(*) AS n FROM deliveries').get().n,2);}finally{globalThis.fetch=original;db.close();t.mock.timers.reset();}
 });
