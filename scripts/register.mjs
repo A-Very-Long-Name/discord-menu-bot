@@ -8,7 +8,7 @@ async function api(path,method,body){
 const commands=[
  {name:'setting',description:'Open your school and reminder dashboard'},
  {name:'leaderboard',description:'Rank dishes and schools by likes minus dislikes',options:['global','personal'].map(name=>({type:1,name,description:name==='global'?'Rank everyone’s votes in this server':'Rank your own votes in this server or DM',options:[{type:3,name:'type',description:'What to rank (default: dishes)',choices:[{name:'Dishes',value:'dishes'},{name:'Schools',value:'schools'}]}]}))},
- {name:'foodforall',description:'Browse school menus one at a time (no voting)',options:[
+ {name:'foodforall',description:'View every school’s menu and past ratings (no voting)',options:[
   {type:3,name:'meal',description:'Meal (default: lunch before 2pm/after 8pm Eastern; otherwise dinner)',choices:MEALS.map(value=>({name:value,value}))},
   {type:3,name:'date',description:'MM/DD (current year; default: next day after meal cutoff, Eastern time)'}]},
  {name:'food',description:'View your school dining menu',options:[

@@ -62,7 +62,7 @@ Self-hosted existing installations must create the `menu_cache` table using `mig
 | `/setting` | None | Private dashboard: school, reminders, notification times, and server channel |
 | `/leaderboard global` | `type`: Dishes or Schools | Public rankings from everyone’s votes in this server |
 | `/leaderboard personal` | `type`: Dishes or Schools | Public rankings from your own votes in this server or DM |
-| `/foodforall` | `meal`, `date` | Browse one school at a time with Previous/Next and a school selector; no voting buttons or setup required |
+| `/foodforall` | `meal`, `date` | Show all schools in one message, with Past ratings and missing-menu notices; no voting buttons or setup required |
 | `/food` | `meal`, `date` | Display lunch or dinner with historical ratings |
 | `/votes` | None | Show saved vote states for today's and the previous two days' menu dates; visible only to the requester; records isolated by server or personal DM |
 
@@ -75,7 +75,7 @@ Examples:
 /votes
 ```
 
-`/foodforall` opens a single school menu card. Previous/Next wrap through all ten schools in A–Z order; the dropdown jumps directly to a school. Each navigation loads only the selected school's menu and keeps the requested meal and date. Only the person who ran the command can navigate that message; others can run their own command. Missing-menu notices and read-only Past ratings remain available. Defaults use Eastern time. The command does not offer voting controls.
+`/foodforall` shows all supported schools in A–Z order in one message. Missing-menu notices and read-only Past ratings are included. If menus exceed Discord embed limits, the same message includes a full text attachment. Defaults use Eastern time. No voting controls are included.
 
 ### Settings dashboard
 

@@ -1,5 +1,5 @@
 import {selectedSchools} from './selections.mjs';
-import {schoolPage} from './foodforall.mjs';
+import {schoolPage,allSchoolMenus,combineSchoolMenus} from './foodforall.mjs';
 import {settingDashboard,changeSetting,timesModal,defaultScope,actorId,schoolIds} from './dashboard.mjs';
 import {leaderboard} from './leaderboard.mjs';
 import {loadWra,refreshWra} from './wra.mjs';
@@ -53,7 +53,8 @@ async function answer(i, meal, date, env) {
 }
 export async function answerAllSchools(i,meal,date,env){
  try{
-  await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',await schoolPage(env,meal,date,actorId(i)));
+  const messages=await allSchoolMenus(env,meal,date);
+  await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',combineSchoolMenus(messages,meal,date));
  }catch{
   console.error('All-school menu response failed');
   try{await discord(`/webhooks/${i.application_id}/${i.token}`,'POST',{content:'Some school menus could not be delivered. Please try again.',allowed_mentions:{parse:[]}});}catch{}
