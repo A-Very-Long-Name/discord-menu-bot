@@ -34,13 +34,13 @@ Selections focus on the main meal, excluding unrelated stations and special acco
 For personal use:
 
 ```text
-/setting scope:Personal
+/setting
 ```
 
 For a server (requires Manage Server permission):
 
 ```text
-/setting scope:Server
+/setting
 ```
 
 Select one or more schools in the dashboard, choose your notification times, and turn reminders on. For server reminders, choose the delivery channel. The bot needs View Channel, Send Messages, and Embed Links permissions in the selected text channel.
@@ -59,12 +59,12 @@ Self-hosted existing installations must create the `menu_cache` table using `mig
 
 | Command | Options | Behavior |
 | --- | --- | --- |
-| `/setting` | `scope` | Private dashboard: school, reminders, notification times, and server channel |
+| `/setting` | None | Private dashboard: school, reminders, notification times, and server channel |
 | `/leaderboard global` | `type`: Dishes or Schools | Public rankings from everyone’s votes in this server |
 | `/leaderboard personal` | `type`: Dishes or Schools | Public rankings from your own votes in this server or DM |
 | `/foodforall` | `meal`, `date` | Browse one school at a time with Previous/Next and a school selector; no voting buttons or setup required |
 | `/food` | `meal`, `date` | Display lunch or dinner with historical ratings |
-| `/votes` | None | Show saved vote states for today's and the previous two days' menu dates; visible to everyone in the channel; records isolated by server or personal DM |
+| `/votes` | None | Show saved vote states for today's and the previous two days' menu dates; visible only to the requester; records isolated by server or personal DM |
 
 Examples:
 
@@ -79,9 +79,9 @@ Examples:
 
 ### Settings dashboard
 
-Run `/setting` or `/setting scope:Personal`. Choose Personal or Server, select one or more schools, toggle reminders, and use **Change times** to enter lunch/dinner times in `HH:mm` format. Blank time fields keep their saved values. For server settings, choose a reminder channel with the channel selector. Changes save immediately; **Refresh** reloads saved settings. The dashboard is private and its controls belong to its opener. Server changes require Manage Server or Administrator permission on every interaction. `/setting` replaces `/setup`; registration removes the retired command. All old setup options are available: school selection, scope, lunch time, dinner time, channel, and reminder toggle. Ordinary server members default to their personal settings.
+Run `/setting` without command options. Choose Personal or Server, select one or more schools, toggle reminders, and use **Change times** to enter lunch/dinner times in `HH:mm` format. Blank time fields keep their saved values. For server settings, choose a reminder channel with the channel selector. Changes save immediately; **Refresh** reloads saved settings. The dashboard is private and its controls belong to its opener. Server changes require Manage Server or Administrator permission on every interaction. `/setting` replaces `/setup`; registration removes the retired command. All old setup options are available: school selection, scope, lunch time, dinner time, channel, and reminder toggle. Ordinary server members default to their personal settings.
 
-A first dashboard school selection saves with reminders off; enable them explicitly. Personal reminder activation checks DM delivery and explains if Discord blocks it. Existing preferences are retained when changing the selected schools. Reminders are sent for each selected school at the chosen times in that school's local timezone (Pacific for Cate; Eastern for the others). All selected schools share the reminder toggle, times, and destination. Removing a school stops its future reminders. Existing single-school bindings remain valid. `/food` and `/votes` use the saved default school shown in the dashboard; it remains selected when possible, otherwise the first selected school becomes the default. Use `/foodforall` to browse the others.
+A first dashboard school selection saves with reminders off; enable them explicitly. Personal reminder activation checks DM delivery and explains if Discord blocks it. Existing preferences are retained when changing the selected schools. Reminders are sent for each selected school at the chosen times in that school's local timezone (Pacific for Cate; Eastern for the others). All selected schools share the reminder toggle, times, and destination. Removing a school stops its future reminders. Existing single-school bindings remain valid. `/food` displays every selected school with separate rating controls. `/votes` privately shows histories for all selected schools. Each school uses its local timezone for default meal and date selection.
 
 ### Leaderboards
 
@@ -94,7 +94,7 @@ Ties sort by most likes, then school and dish name (school IDs for dish ties). S
 After deploying this update, run `npm run register` with the app owner's credentials to register `/setting` and `/leaderboard`. The Worker automatically creates the `school_selections` table on first use; `migrate-school-selections.sql` is also supplied for explicit provisioning. Existing bindings fall back to their original school.
 
 
-Dates use **MM/DD**, with the current year, within 31 days of today. For both `/food` and `/foodforall`, an omitted date defaults to tomorrow when querying lunch at or after 14:00 or dinner at or after 20:00; otherwise it defaults to today. `/food` uses school local time, and `/foodforall` uses Eastern time. An explicit date always overrides this rule. An omitted meal selects lunch before 14:00 and from 20:00 onward, and dinner between those times. Scheduled reminders continue to use today’s menu. In a configured server, queries use that server's school; otherwise they use your personal school. Use the bot's DM for personal queries. Menu queries are generally visible in the channel where invoked.
+Dates use **MM/DD**, with the current year, within 31 days of today. For both `/food` and `/foodforall`, an omitted date defaults to tomorrow when querying lunch at or after 14:00 or dinner at or after 20:00; otherwise it defaults to today. `/food` uses school local time, and `/foodforall` uses Eastern time. An explicit date always overrides this rule. An omitted meal selects lunch before 14:00 and from 20:00 onward, and dinner between those times. Scheduled reminders continue to use today’s menu. In a configured server, queries use that server's selected schools; otherwise they use your personal schools. Use the bot's DM for personal queries. Menu queries are generally visible in the channel where invoked.
 
 Breakfast and brunch queries reply:
 
@@ -110,7 +110,7 @@ Each entrée has **Like 👍**, **fine 🤔**, and **Dislike 👎** buttons with
 
 Every new menu shows historical totals within the current server or personal DM across menu dates. Approval is Likes / (Likes + Fine + Dislikes). Ratings are isolated by school AND by each server or personal DM. Personal messages label the summary **Personal ratings**, and includes only ratings from that personal DM. Server menus include only that server’s ratings. Loomis has one rating row for the first Grill Main item.
 
-Other messages retain their snapshot until interacted with. `/votes` publicly shows current saved states (including withdrawn votes), not a chronological log of every button click. Its three-day range is based on menu dates, not click timestamps. Each server and each personal DM has its own history. Historical totals, button counts, toggling, and Past ratings are isolated in the same scope. Older votes without a recorded source are preserved in the legacy database, but are excluded from both current ratings and vote history because their server/DM cannot be determined. Existing self-hosted installations must apply `migrate-vote-scopes.sql` once before deploying this update.
+Other messages retain their snapshot until interacted with. `/votes` privately shows current saved states (including withdrawn votes), not a chronological log of every button click. Its three-day range is based on menu dates, not click timestamps. Each server and each personal DM has its own history. Historical totals, button counts, toggling, and Past ratings are isolated in the same scope. Older votes without a recorded source are preserved in the legacy database, but are excluded from both current ratings and vote history because their server/DM cannot be determined. Existing self-hosted installations must apply `migrate-vote-scopes.sql` once before deploying this update.
 
 ## Self-hosting
 
@@ -171,8 +171,8 @@ School endpoints and page layouts can change. Missing or unpublished menus are r
 
 The bot may appear offline because it uses HTTP interactions instead of a Gateway presence connection. Commands and reminders can still work.
 
-Stored data includes Discord user IDs, school bindings, reminder channel IDs and times, dish names, vote states, and delivery records. `/votes` publicly displays voters' identities and saved states to any user who invokes it for that school. Keep this behavior in mind when using the hosted app or running your own instance.
+Stored data includes Discord user IDs, school bindings, reminder channel IDs and times, dish names, vote states, and delivery records. `/votes` privately displays voters' identities and saved states to any user who invokes it for that school. Keep this behavior in mind when using the hosted app or running your own instance.
 
 This is an independent community project and is not affiliated with the schools, dining providers, Discord, or Cloudflare.
 
-All command responses are visible in the channel where invoked, except `/setting` and its settings controls, which are private. Personal leaderboards are also public when invoked in a server. DM responses remain in that DM.
+Menu and leaderboard responses are visible in the channel where invoked; `/setting`, its settings controls, and `/votes` are private. Personal leaderboards are also public when invoked in a server. DM responses remain in that DM.

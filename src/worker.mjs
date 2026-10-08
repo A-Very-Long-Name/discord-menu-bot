@@ -41,11 +41,15 @@ async function discord(path, method, body, token) {
   }
 }
 async function answer(i, meal, date, env) {
-  let data,menu;
-  try { menu=env.SCHOOL_ID==='wra'?await loadWra(env,meal,date):await loadMenu(meal,date,fetch,env.SCHOOL_ID || 'sps'); data = await ratedPayload(env,menu); }
-  catch { data = payload({meal, date, school:env.SCHOOL_ID || 'sps', available: false, groups: []}, true); }
-  try { const message=await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`, 'PATCH', data); }
-  catch { console.error('Failed to deliver menu command response'); }
+ for(const [index,id] of (env.FOLLOWED_SCHOOLS||[env.SCHOOL_ID||'sps']).entries()){
+  const local=localTime(new Date(),school(id).zone),opts=env.QUERY_OPTIONS;
+  const selectedMeal=opts?opts.meal||defaultQueryMeal(local.minutes):meal;
+  const selectedDate=opts?queryDate(opts.date,opts.date?local.date:defaultQueryDate(local,selectedMeal)):date;
+  let data;
+  try {const menu=id==='wra'?await loadWra(env,selectedMeal,selectedDate):await loadMenu(selectedMeal,selectedDate,fetch,id);data=await ratedPayload({...env,SCHOOL_ID:id},menu);}
+  catch{data=payload({meal:selectedMeal,date:selectedDate,school:id,available:false,groups:[]},true);}
+  try{await discord(`/webhooks/${i.application_id}/${i.token}${index===0?'/messages/@original':''}`,index===0?'PATCH':'POST',data);}catch{console.error('Followed-school menu delivery failed');}
+ }
 }
 export async function answerAllSchools(i,meal,date,env){
  try{
@@ -57,15 +61,16 @@ export async function answerAllSchools(i,meal,date,env){
 }
 export async function answerVotes(i, env, today = null) {
   try {
-    const messages = await recentVoteMessages(env, today || localTime(new Date(),school(env.SCHOOL_ID).zone).date);
+    const messages=[];
+    for(const id of env.FOLLOWED_SCHOOLS||[env.SCHOOL_ID||'sps']){const rows=await recentVoteMessages({...env,SCHOOL_ID:id},today||localTime(new Date(),school(id).zone).date);if(env.FOLLOWED_SCHOOLS?.length>1)rows[0].content=school(id).name+'\n'+rows[0].content;messages.push(...rows);}
     for (const [index,data] of messages.entries()) {
       await discord(`/webhooks/${i.application_id}/${i.token}${index === 0 ? '/messages/@original' : ''}`,
-        index === 0 ? 'PATCH' : 'POST', data);
+        index === 0 ? 'PATCH' : 'POST', {...data,flags:64});
     }
   } catch {
     console.error('Failed to deliver vote history');
     try { await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',
-      {content:'Vote history is unavailable. Please try again.',allowed_mentions:{parse:[]}}); } catch {}
+      {content:'Vote history is unavailable. Please try again.',flags:64,allowed_mentions:{parse:[]}}); } catch {}
   }
 }
 export async function sendScheduled(env, now = new Date()) {
@@ -190,12 +195,12 @@ export default {
     if(i.type === 2 && ['food','votes'].includes(i.data?.name)) {
       const binding=await bindingFor(env,i);
       if(!binding)return reply('Welcome! Run /setting to choose your school, reminder times, and personal or server use.');
-      env={...env,SCHOOL_ID:binding.school,PERSONAL_MODE:binding.scope_id?.startsWith('user:')};
+      env={...env,SCHOOL_ID:binding.school,FOLLOWED_SCHOOLS:await selectedSchools(env,binding),PERSONAL_MODE:binding.scope_id?.startsWith('user:')};
     }
     if (i.type === 2 && i.data?.name === 'votes') {
       const user=i.member?.user||i.user;
       ctx.waitUntil(answerVotes(i,{...env,VOTE_SCOPE:i.guild_id?`guild:${i.guild_id}`:`user:${user.id}`}));
-      return json({type:5});
+      return json({type:5,data:{flags:64}});
     }
     if (i.type !== 2 || !['food','foodforall'].includes(i.data?.name)) return reply('Unknown command.');
     const options = Object.fromEntries((i.data.options || []).map(x => [x.name,x.value]));
@@ -205,7 +210,7 @@ export default {
     const date = queryDate(options.date, options.date ? local.date : defaultQueryDate(local,meal));
     if (!MEALS.includes(meal) || !date) return reply('Use breakfast, brunch, lunch or dinner; date must be MM/DD (current year).');
     if (Math.abs(Date.parse(date) - Date.parse(local.date)) > 31*86400000) return reply('Please select a date within 31 days of today.');
-    ctx.waitUntil(i.data.name==='foodforall'?answerAllSchools(i,meal,date,env):answer(i, meal, date, env));
+    ctx.waitUntil(i.data.name==='foodforall'?answerAllSchools(i,meal,date,env):answer(i, meal, date, {...env,QUERY_OPTIONS:options}));
     return json({type:5});
   },
   async scheduled(event, env) {

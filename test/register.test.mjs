@@ -11,7 +11,7 @@ test('registration replaces setup with setting and global/personal leaderboard m
  try{
   await import('../scripts/register.mjs');
   const commands=calls.filter(c=>c.method==='POST').map(c=>c.body);
-  assert.ok(commands.some(c=>c.name==='setting'));assert.ok(!commands.some(c=>c.name==='setup'));
+  assert.ok(commands.some(c=>c.name==='setting'));assert.equal(commands.find(c=>c.name==='setting').options,undefined);assert.ok(!commands.some(c=>c.name==='setup'));
   assert.deepEqual(commands.find(c=>c.name==='leaderboard').options.map(o=>o.name),['global','personal']);
   const deletes=calls.filter(c=>c.method==='DELETE');assert.equal(deletes.length,2);assert.ok(deletes.every(c=>c.url.endsWith('/old-setup')));
  }finally{globalThis.fetch=original;keys.forEach((k,n)=>saved[n]===undefined?delete process.env[k]:process.env[k]=saved[n]);}

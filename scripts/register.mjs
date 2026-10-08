@@ -6,7 +6,7 @@ async function api(path,method,body){
  if(!r.ok)throw new Error(`Discord HTTP ${r.status}`);return r.status===204?null:r.json();
 }
 const commands=[
- {name:'setting',description:'Open your school and reminder dashboard',options:[{type:3,name:'scope',description:'Personal or server settings',choices:[{name:'Personal',value:'personal'},{name:'Server',value:'server'}]}]},
+ {name:'setting',description:'Open your school and reminder dashboard'},
  {name:'leaderboard',description:'Rank dishes and schools by likes minus dislikes',options:['global','personal'].map(name=>({type:1,name,description:name==='global'?'Rank everyone’s votes in this server':'Rank your own votes in this server or DM',options:[{type:3,name:'type',description:'What to rank (default: dishes)',choices:[{name:'Dishes',value:'dishes'},{name:'Schools',value:'schools'}]}]}))},
  {name:'foodforall',description:'Browse school menus one at a time (no voting)',options:[
   {type:3,name:'meal',description:'Meal (default: lunch before 2pm/after 8pm Eastern; otherwise dinner)',choices:MEALS.map(value=>({name:value,value}))},
