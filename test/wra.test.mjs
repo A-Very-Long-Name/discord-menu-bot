@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {zipSync,strToU8} from 'fflate';
-import {parseWraDeck,parseWra,loadWra,refreshWra} from '../src/wra.mjs';
+import {parseWraDeck,parseWra,loadWra,refreshWra,completeWraWeek} from '../src/wra.mjs';
 import {lunchReminderAllowed} from '../src/schools.mjs';
 const xml=JSON.parse(readFileSync(new URL('./providers/wra-slides.json',import.meta.url)));
 const bytes=zipSync(Object.fromEntries(xml.map((x,i)=>[`ppt/slides/slide${i+1}.xml`,strToU8(x)])));
@@ -21,14 +21,14 @@ test('school lunch reminders skip verified weekend brunch without removing Satur
  for(const s of ['sps','groton','deerfield','taft','lawrenceville','cate','andover','peddie'])assert.equal(lunchReminderAllowed(s,'Sat'),true);
 });
 test('WRA cached query never serves another week and Monday refresh validates current week',async()=>{
- let record={payload:JSON.stringify(slides),updated_at:0},writes=0;
- const env={DB:{prepare(){return {bind(...args){return {async first(){return record},async run(){writes++;record={payload:args[1],updated_at:args[2]}}}}}}}};
+ let record={payload:JSON.stringify(slides),updated_at:0},writes=0;const attempts=new Map();
+ const env={DB:{prepare(){return {bind(...args){return {async first(){return args[0]==='wra'?record:attempts.get(args[0])},async run(){if(args[0]==='wra'){writes++;record={payload:args[1],updated_at:args[2]}}else attempts.set(args[0],{payload:args[1]})}}}}}}};
  assert.equal((await loadWra(env,'dinner','2026-10-05',()=>{throw Error('cache should be used')})).available,true);
  await assert.rejects(()=>loadWra(env,'dinner','2026-10-12',async()=>new Response('no',{status:503})));
  const original=globalThis.fetch;globalThis.fetch=async()=>new Response(bytes);
  try{
- await refreshWra(env,new Date('2026-10-05T10:00:00Z'),{date:'2026-10-05',weekday:'Mon',minutes:360});assert.equal(writes,1);
- await assert.rejects(()=>refreshWra(env,new Date('2026-10-12T10:00:00Z'),{date:'2026-10-12',weekday:'Mon',minutes:360}));assert.equal(writes,1);
+ await refreshWra(env,new Date('2026-10-05T10:00:00Z'),{date:'2026-10-05',weekday:'Mon',minutes:360});assert.equal(writes,0);
+ await assert.rejects(()=>refreshWra(env,new Date('2026-10-12T10:00:00Z'),{date:'2026-10-12',weekday:'Mon',minutes:360}));assert.equal(writes,0);
  }finally{globalThis.fetch=original}
 });
 test('Saturday brunch detection distinguishes actual food from a breakfast/lunch substitution notice',async()=>{
@@ -40,4 +40,22 @@ test('Saturday brunch detection distinguishes actual food from a breakfast/lunch
   assert.equal(Boolean(menu.brunch),actual);
  }
  assert.equal(parsePeddie({events:[{title:'Brunch',start_date:date+' 11:00:00',description:'Eggs'}]},'lunch',date).brunch,true);
+});
+
+test('WRA retries next morning after stale or partial publication and stops once the week is complete',async()=>{
+ const records=new Map();let requests=0;let published=structuredClone(slides);
+ const env={DB:{prepare(){return {bind(...a){return {async first(){return records.get(a[0])},async run(){records.set(a[0],{payload:a[1],updated_at:a[2]})}}}}}}};
+ const original=globalThis.fetch;
+ globalThis.fetch=async()=>{requests++;return new Response(zipSync(Object.fromEntries(published.map((rows,i)=>[`ppt/slides/slide${i+1}.xml`,strToU8(xml[i])]))))};
+ // Monday sees last week's deck; repeated cron ticks do not repeat that day's download.
+ try{
+ await assert.rejects(()=>refreshWra(env,new Date('2026-10-12T10:00:00Z'),{date:'2026-10-12',minutes:360}));
+ await refreshWra(env,new Date('2026-10-12T10:01:00Z'),{date:'2026-10-12',minutes:361});assert.equal(requests,1);
+ globalThis.fetch=async()=>{requests++;return new Response(zipSync(Object.fromEntries(xml.map((x,i)=>[`ppt/slides/slide${i+1}.xml`,strToU8(x.replaceAll('Week of 10/5','Week of 10/12'))]))))};
+ await refreshWra(env,new Date('2026-10-13T10:00:00Z'),{date:'2026-10-13',minutes:360});assert.equal(requests,2);
+ await refreshWra(env,new Date('2026-10-14T10:00:00Z'),{date:'2026-10-14',minutes:360});assert.equal(requests,2);
+ assert.ok(completeWraWeek(JSON.parse(records.get('wra').payload),'2026-10-13'));
+ const partial=structuredClone(slides);partial[2].filter(r=>r.length===8).slice(1).forEach(r=>r[7]=[]);assert.equal(completeWraWeek(partial,'2026-10-05'),false);
+ const mixed=structuredClone(slides);mixed[0][0][0]=['BREAKFAST - Week of 9/28'];assert.equal(completeWraWeek(mixed,'2026-10-05'),false);
+ }finally{globalThis.fetch=original}
 });
