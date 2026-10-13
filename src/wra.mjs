@@ -29,6 +29,7 @@ export function parseWra(slides,meal,date){
  const retained=new Set(groups.flatMap(g=>g.items));
  const labels=filtered.filter(v=>!retained.has(v)&&/^(?:WRA Chipotle|Family (?:Day Menu|Tailgate Meal)|Cheeseburger Mac & Cheese|Burgers|BBQ Tacos|Gyros|Sandwiches|Baked Potato Bar)$/i.test(v));
  if(labels.length){let main=groups.find(g=>g.name==='Entrée');if(!main){main={name:'Entrée',items:[]};groups.unshift(main);}main.items.push(...labels);}
+ for(const group of groups){const seen=new Set();group.items=group.items.filter(item=>{const key=item.normalize('NFKC').replace(/\s+/g,' ').trim().toLowerCase();if(seen.has(key))return false;seen.add(key);return true;});}
  return {...empty,available:groups.length>0,groups};
 }
 export async function fetchWra(fetcher=fetch){const r=await fetcher(WRA_URL,{signal:AbortSignal.timeout(15000)});if(!r.ok)throw new Error('WRA menu HTTP '+r.status);return parseWraDeck(new Uint8Array(await r.arrayBuffer()));}
