@@ -38,10 +38,30 @@ export async function loadWra(env,meal,date,fetcher=fetch){
  const slides=await fetchWra(fetcher);await saveWra(env,slides);return parseWra(slides,meal,date);
 }
 async function saveWra(env,slides){await env.DB.prepare('INSERT INTO menu_cache(school,payload,updated_at) VALUES(?,?,?) ON CONFLICT(school) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at').bind('wra',JSON.stringify(slides),Date.now()).run();}
+export function completeWraWeek(slides,date){
+ const target=new Date(date+'T12:00:00Z');
+ const monday=new Date(target);monday.setUTCDate(target.getUTCDate()-((target.getUTCDay()+6)%7));
+ const days=Array.from({length:7},(_,i)=>{const d=new Date(monday);d.setUTCDate(d.getUTCDate()+i);return d.toISOString().slice(0,10)});
+ const expected=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+ if(slides.length!==3)return false;
+ for(const rows of slides){
+  const match=rows[0]?.[0]?.join(' ').match(/Week of\s+(\d{1,2})\/(\d{1,2})(?:\/(\d{4}))?/i);
+  if(!match||Number(match[1])!==monday.getUTCMonth()+1||Number(match[2])!==monday.getUTCDate()||(match[3]&&Number(match[3])!==monday.getUTCFullYear()))return false;
+  if(rows[1]?.length!==8||rows[1].slice(1).some((c,i)=>c.join(' ').trim()!==expected[i]))return false;
+ }
+ const breakfast=slides[0].filter(r=>r.length===8&&r!==slides[0][1]);
+ if(days.some((_,i)=>!breakfast.some(r=>r[i+1]?.some(v=>v.trim()&&!/^none$|^tbd$/i.test(v.trim())))))return false;
+ try{return days.every(d=>['lunch','dinner'].every(meal=>{const m=parseWra(slides,meal,d);return m.available||m.brunch}));}catch{return false;}
+}
 export async function refreshWra(env,now,local){
- if(local.weekday!=='Mon'||local.minutes<360||local.minutes>=420)return;
+ // Check once each morning before 07:00 until all three slides cover the current week.
+ if(local.minutes<360||local.minutes>=420)return;
  const prior=await env.DB.prepare('SELECT payload,updated_at FROM menu_cache WHERE school=?').bind('wra').first();
- // A successful current-week refresh ends the retry loop; failed or stale decks retry before 07:00.
- if(prior&&prior.updated_at>now.getTime()-3600000&&parseWra(JSON.parse(prior.payload),'dinner',local.date).available)return;
- const slides=await fetchWra();if(!parseWra(slides,'dinner',local.date).available)throw new Error('WRA current week not published');await saveWra(env,slides);
+ if(prior){try{if(completeWraWeek(JSON.parse(prior.payload),local.date))return;}catch{}}
+ const attempt=await env.DB.prepare('SELECT payload FROM menu_cache WHERE school=?').bind('wra-refresh-attempt').first();
+ if(attempt?.payload===local.date)return;
+ await env.DB.prepare('INSERT INTO menu_cache(school,payload,updated_at) VALUES(?,?,?) ON CONFLICT(school) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at').bind('wra-refresh-attempt',local.date,now.getTime()).run();
+ const slides=await fetchWra();
+ if(!completeWraWeek(slides,local.date))throw new Error('WRA complete current week not published');
+ await saveWra(env,slides);
 }
