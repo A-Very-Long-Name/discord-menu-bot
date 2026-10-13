@@ -59,3 +59,13 @@ test('WRA retries next morning after stale or partial publication and stops once
  const mixed=structuredClone(slides);mixed[0][0][0]=['BREAKFAST - Week of 9/28'];assert.equal(completeWraWeek(mixed,'2026-10-05'),false);
  }finally{globalThis.fetch=original}
 });
+
+test('WRA duplicate station labels and dish case/spacing variations produce one entree and rating row',async()=>{
+ const {entrees}=await import('../src/ratings.mjs');
+ const repeated=structuredClone(slides);
+ const rows=repeated[2].filter(r=>/^(BRAVO|PIONEER PLATES|INSPIRED EATS)$/i.test(r[0]?.join(' ').trim()));
+ rows[0][1]=['Family Tailgate Meal','Grilled Chicken'];rows[1][1]=['Family Tailgate Meal','grilled   chicken'];rows[2][1]=['Burgers','Burgers'];
+ const menu=parseWra(repeated,'dinner','2026-10-05');
+ assert.deepEqual(menu.groups.find(g=>g.name==='Entrée').items,['Grilled Chicken','Family Tailgate Meal','Burgers']);
+ assert.equal(entrees(menu).length,3);
+});
