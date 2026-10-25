@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS vote_click_times(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,clicked_at INTEGER NOT NULL,clicked_date TEXT NOT NULL,PRIMARY KEY(scope_id,school,dish,serving_date,user_id));
