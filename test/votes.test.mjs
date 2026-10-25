@@ -6,9 +6,10 @@ import worker,{answerVotes} from '../src/worker.mjs';
 function database() {
  const db=new DatabaseSync(':memory:');
  db.exec("CREATE TABLE vote_scope_states(scope_id TEXT DEFAULT 'guild:test',school TEXT DEFAULT 'sps',dish TEXT,serving_date TEXT,user_id TEXT,value INTEGER)");
+ db.exec("CREATE TABLE vote_click_times(scope_id TEXT,school TEXT,dish TEXT,serving_date TEXT,user_id TEXT,clicked_at INTEGER,clicked_date TEXT);CREATE TRIGGER fixture_click AFTER INSERT ON vote_scope_states BEGIN INSERT INTO vote_click_times VALUES(NEW.scope_id,NEW.school,NEW.dish,NEW.serving_date,NEW.user_id,0,NEW.serving_date); END;");
  return {db,env:{VOTE_SCOPE:'guild:test',DB:{prepare(sql){return {bind(...args){return {async all(){return {results:db.prepare(sql).all(...args)}}}}}}}}};
 }
-test('three menu dates include withdrawals and exclude older and future votes',async()=>{
+test('three click dates include withdrawals and exclude older and future votes',async()=>{
  assert.deepEqual(voteDateRange('2027-01-01'),{start:'2026-12-30',end:'2027-01-01'});
  const {db,env}=database();
  for(const [date,value] of [['2026-10-03',1],['2026-10-04',0],['2026-10-05',-1],['2026-10-06',2],['2026-10-07',1]]) db.prepare('INSERT INTO vote_scope_states(dish,serving_date,user_id,value) VALUES(?,?,?,?)').run('chicken',date,'123',value);
@@ -46,7 +47,7 @@ test('/votes accepts an ordinary member and defers privately',async()=>{
  const response=await worker.fetch(request,{...env,DISCORD_PUBLIC_KEY:pub,DISCORD_GUILD_ID:'guild',DISCORD_APPLICATION_ID:'app'},{waitUntil(p){tasks.push(p)}});
  assert.deepEqual(await response.json(),{type:5,data:{flags:64}});
  await Promise.all(tasks);
- assert.ok((await recentVoteMessages(env,'2026-10-06'))[0].content.includes('No votes'));
+ assert.ok((await recentVoteMessages(env,'2026-10-06'))[0].content.includes('No recorded clicks'));
  }finally{globalThis.fetch=original;db.close();}
 });
 test('vote history is isolated between each server and personal DM; legacy unscoped votes are not exposed',async()=>{
@@ -56,5 +57,15 @@ test('vote history is isolated between each server and personal DM; legacy unsco
  assert.match(await get('guild:a'),/123.*Like/);assert.doesNotMatch(await get('guild:a'),/456|Dislike/);
  assert.match(await get('guild:b'),/456.*fine/);assert.doesNotMatch(await get('guild:b'),/123/);
  assert.match(await get('user:123'),/123.*Dislike/);assert.doesNotMatch(await get('user:123'),/456|👍 Like/);
- assert.match(await get('user:456'),/456.*Like/);assert.match(await get('unscoped'),/No votes/);db.close();
+ assert.match(await get('user:456'),/456.*Like/);assert.match(await get('unscoped'),/No recorded clicks/);db.close();
+});
+
+test('actual click date is independent of the menu date; untimestamped old votes are excluded',async()=>{
+ const {db,env}=database();
+ db.prepare('INSERT INTO vote_scope_states(dish,serving_date,user_id,value) VALUES(?,?,?,?)').run('future chicken','2026-10-25','123',1);
+ db.exec("UPDATE vote_click_times SET clicked_date='2026-10-22',clicked_at=1");
+ let text=(await recentVoteMessages(env,'2026-10-24')).map(x=>x.content).join('\n');
+ assert.match(text,/10\/22 · <@123> · future chicken · 👍 Like · menu 10\/25/);
+ text=(await recentVoteMessages(env,'2026-10-25')).map(x=>x.content).join('\n');assert.doesNotMatch(text,/future chicken/);
+ db.exec('DELETE FROM vote_click_times');assert.match((await recentVoteMessages(env,'2026-10-25'))[0].content,/No recorded clicks/);db.close();
 });
