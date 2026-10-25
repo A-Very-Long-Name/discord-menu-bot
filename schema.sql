@@ -21,3 +21,5 @@ CREATE TABLE IF NOT EXISTS menu_cache(school TEXT PRIMARY KEY,payload TEXT NOT N
 CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));
 
 CREATE TABLE IF NOT EXISTS school_selections(scope_id TEXT PRIMARY KEY,schools TEXT NOT NULL);
+
+CREATE TABLE IF NOT EXISTS vote_click_times(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,clicked_at INTEGER NOT NULL,clicked_date TEXT NOT NULL,PRIMARY KEY(scope_id,school,dish,serving_date,user_id));
