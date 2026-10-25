@@ -64,7 +64,7 @@ Self-hosted existing installations must create the `menu_cache` table using `mig
 | `/leaderboard personal` | `type`: Dishes or Schools | Public rankings from your own votes in this server or DM |
 | `/foodforall` | `meal`, `date` | Show all schools in one message, with Past ratings and missing-menu notices; no voting buttons or setup required |
 | `/food` | `meal`, `date` | Display lunch or dinner with historical ratings |
-| `/votes` | None | Show saved vote states for today's and the previous two days' menu dates; visible only to the requester; records isolated by server or personal DM |
+| `/votes` | None | Show current vote states by actual last click date, covering today and the previous two days; visible only to the requester; records isolated by server or personal DM |
 
 Examples:
 
@@ -110,7 +110,7 @@ Each entrée has **Like 👍**, **fine 🤔**, and **Dislike 👎** buttons with
 
 Every new menu shows historical totals within the current server or personal DM across menu dates. Approval is Likes / (Likes + Fine + Dislikes). Ratings are isolated by school AND by each server or personal DM. Personal messages label the summary **Personal ratings**, and includes only ratings from that personal DM. Server menus include only that server’s ratings. Loomis has one rating row for the first Grill Main item.
 
-Other messages retain their snapshot until interacted with. `/votes` privately shows current saved states (including withdrawn votes), not a chronological log of every button click. Its three-day range is based on menu dates, not click timestamps. Each server and each personal DM has its own history. Historical totals, button counts, toggling, and Past ratings are isolated in the same scope. Older votes without a recorded source are preserved in the legacy database, but are excluded from both current ratings and vote history because their server/DM cannot be determined. Existing self-hosted installations must apply `migrate-vote-scopes.sql` once before deploying this update.
+Other messages retain their snapshot until interacted with. `/votes` privately shows current saved states (including withdrawn votes), not a chronological log of every button click. Its three-day range uses the actual last click date in the school's timezone. Each line also labels the menu date. Older records without a recorded click timestamp are excluded; they still contribute to dish ratings. Each server and each personal DM has its own history. Historical totals, button counts, toggling, and Past ratings are isolated in the same scope. Older votes without a recorded source are preserved in the legacy database, but are excluded from both current ratings and vote history because their server/DM cannot be determined. Existing self-hosted installations must apply `migrate-vote-scopes.sql` once before deploying this update.
 
 ## Self-hosting
 
