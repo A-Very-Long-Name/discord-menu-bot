@@ -14,7 +14,7 @@ const commands=[
  {name:'food',description:'View your school dining menu',options:[
   {type:3,name:'meal',description:'Meal (default: lunch before 2pm/after 8pm; otherwise dinner)',choices:MEALS.map(value=>({name:value,value}))},
   {type:3,name:'date',description:'MM/DD (current year; default: next day after meal cutoff, school time)'}]},
- {name:'votes',description:"View votes for today's and previous two days' menus"},
+ {name:'votes',description:"View ratings clicked within the last three calendar days"},
 
 ];
 // Enable both install modes without changing unrelated application settings.
