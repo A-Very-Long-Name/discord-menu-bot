@@ -1,3 +1,5 @@
+import {school} from './schools.mjs';
+import {localTime} from './menu.mjs';
 import {payload} from './menu.mjs';
 export const dishKey=name=>name.normalize('NFKC').trim().replace(/\s+/g,' ').toLowerCase();
 export function entrees(menu) {return [...new Set(menu.groups.filter(g=>/^(main )?entree$/.test(g.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase())).flatMap(g=>g.items))];}
@@ -38,6 +40,8 @@ export async function vote(env,i) {
  const result=await env.DB.prepare(`INSERT INTO vote_scope_states(scope_id,school,dish,serving_date,user_id,value) VALUES(?,?,?,?,?,?)
  ON CONFLICT(scope_id,school,dish,serving_date,user_id) DO UPDATE SET value=CASE WHEN vote_scope_states.value=excluded.value THEN 0 ELSE excluded.value END RETURNING value`)
  .bind(scope,dish.school||'sps',key,date,user.id,value).first();
+ const clickedAt=Date.now(),clickedDate=localTime(new Date(clickedAt),school(dish.school||'sps').zone).date;
+ await env.DB.prepare('INSERT INTO vote_click_times(scope_id,school,dish,serving_date,user_id,clicked_at,clicked_date) VALUES(?,?,?,?,?,?,?) ON CONFLICT(scope_id,school,dish,serving_date,user_id) DO UPDATE SET clicked_at=excluded.clicked_at,clicked_date=excluded.clicked_date').bind(scope,dish.school||'sps',key,date,user.id,clickedAt,clickedDate).run();
  return `${result.value===0?'Rating removed.':`Rating saved: ${value===1?'👍':value===2?'🤔':'👎'}`}\n${await history({...env,VOTE_SCOPE:scope,SCHOOL_ID:dish.school || 'sps'},dish.name)}`;
 
 }
