@@ -176,3 +176,5 @@ Stored data includes Discord user IDs, school bindings, reminder channel IDs and
 This is an independent community project and is not affiliated with the schools, dining providers, Discord, or Cloudflare.
 
 Menu and leaderboard responses are visible in the channel where invoked; `/setting`, its settings controls, and `/votes` are private. Personal leaderboards are also public when invoked in a server. DM responses remain in that DM.
+
+Scheduled reminders are skipped when a successful `/food` or `/foodforall` query already displayed the same school, meal and menu date in the reminder destination during the three hours before the scheduled time. Other channels, servers, personal DMs, unavailable menus, and other dates or meals do not suppress reminders. Suppression remains in effect for the full retry window. Only queries made after this update are recorded.
