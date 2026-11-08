@@ -1,3 +1,4 @@
+import {QUERY_SCHEMA,recordMenuQuery,recentlyQueried} from './query-reminders.mjs';
 import {selectedSchools} from './selections.mjs';
 import {schoolPage,allSchoolMenus,combineSchoolMenus} from './foodforall.mjs';
 import {settingDashboard,changeSetting,timesModal,defaultScope,actorId,schoolIds} from './dashboard.mjs';
@@ -41,20 +42,23 @@ async function discord(path, method, body, token) {
   }
 }
 async function answer(i, meal, date, env) {
+ const queriedAt=Date.now();
  for(const [index,id] of (env.FOLLOWED_SCHOOLS||[env.SCHOOL_ID||'sps']).entries()){
   const local=localTime(new Date(),school(id).zone),opts=env.QUERY_OPTIONS;
   const selectedMeal=opts?opts.meal||defaultQueryMeal(local.minutes):meal;
   const selectedDate=opts?queryDate(opts.date,opts.date?local.date:defaultQueryDate(local,selectedMeal)):date;
-  let data;
-  try {const menu=id==='wra'?await loadWra(env,selectedMeal,selectedDate):await loadMenu(selectedMeal,selectedDate,fetch,id);data=await ratedPayload({...env,SCHOOL_ID:id},menu);}
+  let data,menu;
+  try {menu=id==='wra'?await loadWra(env,selectedMeal,selectedDate):await loadMenu(selectedMeal,selectedDate,fetch,id);data=await ratedPayload({...env,SCHOOL_ID:id},menu);}
   catch{data=payload({meal:selectedMeal,date:selectedDate,school:id,available:false,groups:[]},true);}
-  try{await discord(`/webhooks/${i.application_id}/${i.token}${index===0?'/messages/@original':''}`,index===0?'PATCH':'POST',data);}catch{console.error('Followed-school menu delivery failed');}
+  try{await discord(`/webhooks/${i.application_id}/${i.token}${index===0?'/messages/@original':''}`,index===0?'PATCH':'POST',data);if(menu?.available)await recordMenuQuery(env,i,menu,queriedAt);}catch{console.error('Followed-school menu delivery failed');}
  }
 }
 export async function answerAllSchools(i,meal,date,env){
  try{
-  const messages=await allSchoolMenus(env,meal,date);
+  const served=[];const queriedAt=Date.now();
+  const messages=await allSchoolMenus({...env,ON_MENU_LOADED:menu=>{if(menu.available)served.push(menu)}},meal,date);
   await discord(`/webhooks/${i.application_id}/${i.token}/messages/@original`,'PATCH',combineSchoolMenus(messages,meal,date));
+  for(const menu of served)await recordMenuQuery(env,i,menu,queriedAt);
  }catch{
   console.error('All-school menu response failed');
   try{await discord(`/webhooks/${i.application_id}/${i.token}`,'POST',{content:'Some school menus could not be delivered. Please try again.',allowed_mentions:{parse:[]}});}catch{}
@@ -87,6 +91,7 @@ export async function sendScheduled(env, now = new Date()) {
     .bind(key, stamp + 120000, stamp).first();
   if (!claim) return;
   try {
+    if(await recentlyQueried(env,due,now)){await env.DB.prepare("UPDATE deliveries SET status='sent' WHERE delivery_key=?").bind(key).run();return;}
     let menu, failure = false;
     try { menu = env.SCHOOL_ID==='wra' ? await loadWra(env,due.meal,due.date,env.MENU_FETCHER||fetch) : await loadMenu(due.meal, due.date,env.MENU_FETCHER || fetch,env.SCHOOL_ID || 'sps'); }
     catch { failure = true; menu = {meal: due.meal, date: due.date, school:env.SCHOOL_ID || 'sps', available: false, groups: []}; }
@@ -112,7 +117,7 @@ export async function sendScheduled(env, now = new Date()) {
 const scopeSchemaReady=new WeakMap();
 async function ensureScopeSchema(env){
  if(!env.DB?.exec)return;
- if(!scopeSchemaReady.has(env.DB)){const pending=env.DB.exec('CREATE TABLE IF NOT EXISTS vote_click_times(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,clicked_at INTEGER NOT NULL,clicked_date TEXT NOT NULL,PRIMARY KEY(scope_id,school,dish,serving_date,user_id));CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));CREATE TABLE IF NOT EXISTS school_selections(scope_id TEXT PRIMARY KEY,schools TEXT NOT NULL);').catch(error=>{scopeSchemaReady.delete(env.DB);throw error});scopeSchemaReady.set(env.DB,pending);}
+ if(!scopeSchemaReady.has(env.DB)){const pending=env.DB.exec(QUERY_SCHEMA+'CREATE TABLE IF NOT EXISTS vote_click_times(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,clicked_at INTEGER NOT NULL,clicked_date TEXT NOT NULL,PRIMARY KEY(scope_id,school,dish,serving_date,user_id));CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,value INTEGER NOT NULL CHECK(value IN(-1,0,1,2)),PRIMARY KEY(scope_id,school,dish,serving_date,user_id));CREATE TABLE IF NOT EXISTS school_selections(scope_id TEXT PRIMARY KEY,schools TEXT NOT NULL);').catch(error=>{scopeSchemaReady.delete(env.DB);throw error});scopeSchemaReady.set(env.DB,pending);}
  await scopeSchemaReady.get(env.DB);
 }
 // Acknowledge slow work before menu requests or database updates.
