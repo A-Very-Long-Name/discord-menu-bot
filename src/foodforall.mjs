@@ -12,7 +12,7 @@ export async function allSchoolMenus(env,meal,date,fetcher=fetch,loader=null,sel
    let menu,failure=false;
    try{menu=loader?await loader(id,meal,date):id==='wra'?await loadWra(env,meal,date,fetcher):await loadMenu(meal,date,fetcher,id);}
    catch{failure=true;menu={meal,date,school:id,available:false,groups:[]};}
-   menu={...menu,school:id};const card=payload(menu,failure);
+   menu={...menu,school:id};env.ON_MENU_LOADED?.(menu);const card=payload(menu,failure);
    card.embeds[0].title=`${school(id).name} · ${meal[0].toUpperCase()+meal.slice(1)} · ${date.slice(5).replace('-','/')}`;
    const lines=[];
    for(const name of entrees(menu)){
