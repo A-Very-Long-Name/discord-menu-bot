@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS menu_queries(scope_id TEXT NOT NULL,channel_id TEXT NOT NULL,school TEXT NOT NULL,serving_date TEXT NOT NULL,meal TEXT NOT NULL,queried_at INTEGER NOT NULL,PRIMARY KEY(scope_id,channel_id,school,serving_date,meal));
