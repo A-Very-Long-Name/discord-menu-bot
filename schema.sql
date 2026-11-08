@@ -23,3 +23,5 @@ CREATE TABLE IF NOT EXISTS vote_scope_states(scope_id TEXT NOT NULL,school TEXT 
 CREATE TABLE IF NOT EXISTS school_selections(scope_id TEXT PRIMARY KEY,schools TEXT NOT NULL);
 
 CREATE TABLE IF NOT EXISTS vote_click_times(scope_id TEXT NOT NULL,school TEXT NOT NULL,dish TEXT NOT NULL,serving_date TEXT NOT NULL,user_id TEXT NOT NULL,clicked_at INTEGER NOT NULL,clicked_date TEXT NOT NULL,PRIMARY KEY(scope_id,school,dish,serving_date,user_id));
+
+CREATE TABLE IF NOT EXISTS menu_queries(scope_id TEXT NOT NULL,channel_id TEXT NOT NULL,school TEXT NOT NULL,serving_date TEXT NOT NULL,meal TEXT NOT NULL,queried_at INTEGER NOT NULL,PRIMARY KEY(scope_id,channel_id,school,serving_date,meal));
